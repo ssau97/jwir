@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>인천 러시아어 장로의 회 포털</title>
+
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="장로포털">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background-color: #eef2f7; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    .card { border-radius: 14px; border: none; box-shadow: 0 4px 14px rgba(0,0,0,0.06); }
+    .nav-tabs .nav-link { font-weight: 700; color: #495057; }
+    .nav-tabs .nav-link.active { color: #0d6efd; border-bottom: 3px solid #0d6efd; }
+    .scroll-list { max-height: 360px; overflow-y: scroll; border: 1px solid #dee2e6; border-radius: 8px; padding: 10px; }
+    .member-row { border-bottom: 1px solid #edf2f7; padding: 8px 0; }
+    
+    /* 가족 묶음별 배경색 교차 */
+    .family-group-even { background-color: #ffffff; }
+    .family-group-odd { background-color: #f1f5f9; }
+    
+    /* 비상연락망 틀 고정 (Sticky Header & Left Columns) */
+    .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .nowrap { white-space: nowrap; }
+    .sticky-col-1 { position: sticky; left: 0; background-color: inherit; z-index: 2; min-width: 65px; text-align: center; border-right: 1px solid #dee2e6; }
+    .sticky-col-2 { position: sticky; left: 65px; background-color: inherit; z-index: 2; min-width: 90px; border-right: 2px solid #adb5bd; }
+    thead th.sticky-col-1, thead th.sticky-col-2 { z-index: 3; background-color: #e9ecef; }
+  </style>
+</head>
+<body class="py-3">
+<div class="container" style="max-width: 960px;">
+
+  <div id="loginScreen" class="card p-4 mx-auto mt-4 text-center" style="max-width: 420px;">
+    <h4 class="fw-bold mb-3">인천 러시아어 장로의 회</h4>
+    <p class="text-muted small">장로 성명과 PIN 번호를 입력하세요.</p>
+    <input type="text" id="elderNameInput" class="form-control form-control-lg text-center mb-2" placeholder="장로 성명">
+    <input type="password" id="elderPinInput" class="form-control form-control-lg text-center mb-3" maxlength="6" placeholder="••••">
+    <button class="btn btn-primary btn-lg w-100 fw-bold" onclick="loginElder()">접속하기</button>
+  </div>
+
+  <div id="mainDashboard" style="display:none;">
+    
+    <div class="d-flex justify-content-between align-items-center mb-3 bg-white p-3 rounded shadow-sm">
+      <span class="fw-bold text-primary fs-5" id="loggedElderName">인천 러시아어 장로의 회</span>
+      <button class="btn btn-sm btn-outline-danger" onclick="location.reload()">로그아웃</button>
+    </div>
+
+    <ul class="nav nav-tabs nav-fill mb-3 bg-white rounded-top shadow-sm" id="elderTabNav">
+      <li class="nav-item">
+        <button class="nav-link active" id="btnTabMeeting" onclick="showTab('meeting')">집회 출석부</button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" id="btnTabAttendanceStatus" onclick="showTab('attendanceStatus')">집회 참석 현황</button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" id="btnTabService" onclick="showTab('service')">봉사 보고 현황</button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" id="btnTabEmergency" onclick="showTab('emergency')">비상연락망</button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" id="btnTabGroupTable" onclick="showTab('grouptable')">집단 편성표</button>
+      </li>
+    </ul>
+
+    <div id="tabMeeting" class="card p-3 mb-4">
+      <div class="row g-2 mb-3">
+        <div class="col-8">
+          <label class="form-label fw-bold">집회 일정 선택</label>
+          <select id="meetingScheduleSelect" class="form-select fw-bold" onchange="onMeetingDateChanged()"></select>
+        </div>
+        <div class="col-4">
+          <label class="form-label fw-bold">구분</label>
+          <input type="text" id="meetingTypeDisplay" class="form-control fw-bold" readonly>
+        </div>
+      </div>
+
+      <label class="form-label fw-bold">담당 집단 선택</label>
+      <div class="btn-group w-100 mb-3" id="groupTabButtons">
+        <button class="btn btn-outline-primary active" onclick="switchGroup('사랑', this)">사랑 집단 <span id="badge_사랑" class="badge bg-secondary">미입력</span></button>
+        <button class="btn btn-outline-primary" onclick="switchGroup('기쁨', this)">기쁨 집단 <span id="badge_기쁨" class="badge bg-secondary">미입력</span></button>
+        <button class="btn btn-outline-primary" onclick="switchGroup('평화', this)">평화 집단 <span id="badge_평화" class="badge bg-secondary">미입력</span></button>
+      </div>
+
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <span class="fw-bold" id="groupTitle">사랑 집단 명부</span>
+        <span class="badge bg-primary fs-6" id="groupStats">총원: 0명 / 출석: 0명</span>
+      </div>
+      <div id="groupMemberList" class="scroll-list mb-3"></div>
+
+      <div class="row g-2 mb-3">
+        <div class="col-5">
+          <label class="form-label fw-bold">방문/관심자 수</label>
+          <input type="number" id="guestCount" class="form-control" value="0" min="0" oninput="calcMeeting()">
+        </div>
+        <div class="col-7">
+          <label class="form-label fw-bold">방문자 메모</label>
+          <input type="text" id="guestRemarks" class="form-control" placeholder="타회중 방문 등">
+        </div>
+      </div>
+
+      <div class="alert alert-primary text-center fw-bold fs-5 mb-3" id="totalMeetingDisplay">
+        집단 집계 참석자: 0 명
+      </div>
+      <button class="btn btn-success btn-lg w-100 fw-bold" onclick="saveMeetingAttendance()">해당 집단 참석 기록 저장</button>
+    </div>
+
+    <div id="tabAttendanceStatus" class="card p-3 mb-4" style="display:none;">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="fw-bold mb-0">집회 참석 현황 및 S-88 집계</h5>
+        <input type="month" id="calendarMonthPicker" class="form-control w-auto fw-bold" value="2026-09" onchange="loadAttendanceCalendar()">
+      </div>
+
+      <div class="row g-2 text-center mb-4">
+        <div class="col-md-6">
+          <div class="card p-2 bg-light border-primary h-100">
+            <h6 class="fw-bold text-primary mb-1">평일 집회 (Будни)</h6>
+            <div class="small">집회 수: <strong id="sumWeekdays">0</strong>회 | 총 참석: <strong id="sumWeekdayTotal">0</strong>명</div>
+            <div class="fs-5 fw-bold text-dark mt-1">평균: <span id="avgWeekday" class="badge bg-primary fs-6">0</span> 명</div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card p-2 bg-light border-success h-100">
+            <h6 class="fw-bold text-success mb-1">주말 집회 (Выходные)</h6>
+            <div class="small">집회 수: <strong id="sumWeekends">0</strong>회 | 총 참석: <strong id="sumWeekendTotal">0</strong>명</div>
+            <div class="fs-5 fw-bold text-dark mt-1">평균: <span id="avgWeekend" class="badge bg-success fs-6">0</span> 명</div>
+          </div>
+        </div>
+      </div>
+
+      <h6 class="fw-bold mb-2">해당 월 집회 일자별 세부 기록</h6>
+      <div class="table-responsive">
+        <table class="table table-bordered table-sm align-middle text-center">
+          <thead class="table-light">
+            <tr>
+              <th>일시</th><th>구분</th><th>총 참석</th><th>결석자 및 사유 (집단별)</th>
+            </tr>
+          </thead>
+          <tbody id="attendanceCalendarBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="tabService" class="card p-3 mb-4" style="display:none;">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="fw-bold mb-0">월별 봉사 보고 현황</h5>
+        <div class="d-flex gap-2">
+          <button class="btn btn-sm btn-outline-danger fw-bold shadow-sm" id="btnDownloadAllS21" onclick="downloadAllS21Zip()">
+            📦 순회방문 S-21 전체 일괄 다운로드 (ZIP)
+          </button>
+          <select id="serviceMonthFilter" class="form-select w-auto fw-bold" onchange="loadServiceReports()">
+            <option value="2026-09">2026-09</option><option value="2026-10">2026-10</option>
+            <option value="2026-11">2026-11</option><option value="2026-12">2026-12</option>
+            <option value="2027-01">2027-01</option><option value="2027-02">2027-02</option>
+            <option value="2027-03">2027-03</option><option value="2027-04">2027-04</option>
+            <option value="2027-05">2027-05</option><option value="2027-06">2027-06</option>
+            <option value="2027-07">2027-07</option><option value="2027-08">2027-08</option>
+            <option value="2027-09">2027-09</option><option value="2027-10">2027-10</option>
+            <option value="2027-11">2027-11</option><option value="2027-12">2027-12</option>
+            <option value="2028-01">2028-01</option><option value="2028-02">2028-02</option>
+            <option value="2028-03">2028-03</option><option value="2028-04">2028-04</option>
+            <option value="2028-05">2028-05</option><option value="2028-06">2028-06</option>
+            <option value="2028-07">2028-07</option><option value="2028-08">2028-08</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="card p-3 bg-light mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h6 class="fw-bold mb-0">📊 회중 월간 총괄 지표</h6>
+          <span id="collectionStatusBadge" class="badge bg-warning text-dark">수집중</span>
+        </div>
+        <div class="row g-2 text-center" style="font-size: 0.85rem;">
+          <div class="col-4">총 활동 전도인: <strong id="m_totalActive">0</strong>명</div>
+          <div class="col-4">전도인 보고: <strong id="m_pubReport">0</strong>명</div>
+          <div class="col-4">전도인 연구: <strong id="m_pubStudies">0</strong>건</div>
+          <div class="col-4">보조P 보고: <strong id="m_auxReport">0</strong>명</div>
+          <div class="col-4">보조P 시간: <strong id="m_auxHours">0</strong>시간</div>
+          <div class="col-4">보조P 연구: <strong id="m_auxStudies">0</strong>건</div>
+          <div class="col-4">정규P 보고: <strong id="m_regReport">0</strong>명</div>
+          <div class="col-4">정규P 시간: <strong id="m_regHours">0</strong>시간</div>
+          <div class="col-4">정규P 연구: <strong id="m_regStudies">0</strong>건</div>
+        </div>
+      </div>
+
+      <div id="unsubmittedAlertBox" class="alert alert-danger mb-3" style="display:none;">
+        <h6 class="fw-bold">⚠️ 현재 미제출 전도인 명단 (집단별)</h6>
+        <div id="unsubmittedListContent"></div>
+      </div>
+
+      <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+        <table class="table table-hover table-sm">
+          <thead class="table-light">
+            <tr><th>성명</th><th>신분</th><th>참여</th><th>시간</th><th>추가</th><th>연구</th><th>비고</th></tr>
+          </thead>
+          <tbody id="serviceReportBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="tabEmergency" class="card p-3 mb-4" style="display:none;">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="fw-bold mb-0">회중 비상연락망 (가족별 정렬)</h5>
+        <button class="btn btn-sm btn-outline-primary" onclick="window.print()">인쇄 / PDF 저장</button>
+      </div>
+
+      <div class="table-responsive" style="max-height: 480px; overflow-y: auto;">
+        <table class="table table-sm table-bordered align-middle" style="font-size: 0.88rem;">
+          <thead class="table-light text-center nowrap">
+            <tr>
+              <th class="sticky-col-1">집단</th>
+              <th class="sticky-col-2">성명</th>
+              <th>관계</th>
+              <th>연락처(본인)</th>
+              <th>보호자/비상연락</th>
+              <th>보호자 연락처</th>
+              <th>실거주지 주소</th>
+              <th>기타정보</th>
+            </tr>
+          </thead>
+          <tbody id="emergencyBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="tabGroupTable" class="card p-3 mb-4" style="display:none;">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="fw-bold mb-0">회중 집단 편성표</h5>
+        <a id="btnGroupTablePdf" href="#" target="_blank" class="btn btn-sm btn-primary fw-bold">📄 PDF 다운로드</a>
+      </div>
+      <div class="ratio ratio-4x3" style="min-height: 650px; border: 1px solid #dee2e6; border-radius: 8px; overflow: hidden;">
+        <iframe id="groupTableIframe" src="" frameborder="0"></iframe>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // ⭐️ 백엔드로 배포한 Google Apps Script 웹 앱 URL을 입력하세요.
+  const API_URL = "https://script.google.com/macros/s/AKfycbz_여기에_본인의_웹앱_배포URL을_입력하세요/exec";
+
+  let groupData = {};
+  let currentGroup = "사랑";
+  let activeElder = "";
+
+  const absentReasonList = ["모름", "병가", "외부강연", "여행", "타 집회 참석", "타 대회 참석", "기타", "메모(직접입력)"];
+
+  /**
+   * Google Apps Script REST API 통신 라우터 (POST)
+   */
+  async function apiCall(action, payload = {}) {
+    try {
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ action: action, payload: payload })
+      });
+      return await response.json();
+    } catch (e) {
+      console.error("API 통신 에러:", e);
+      return { success: false, message: "서버 통신에 실패했습니다." };
+    }
+  }
+
+  async function loginElder() {
+    const name = document.getElementById("elderNameInput").value.trim();
+    const pin = document.getElementById("elderPinInput").value.trim();
+    
+    const res = await apiCall("verifyElderIndividualLogin", { elderName: name, enteredPin: pin });
+    if (res && res.success) {
+      activeElder = res.elderName;
+      document.getElementById("loggedElderName").innerText = `장로: ${activeElder}`;
+      document.getElementById("loginScreen").style.display = "none";
+      document.getElementById("mainDashboard").style.display = "block";
+      loadMeetingData();
+    } else {
+      alert(res ? res.message : "로그인에 실패했습니다.");
+    }
+  }
+
+  function showTab(tab) {
+    document.querySelectorAll("#elderTabNav .nav-link").forEach(b => b.classList.remove('active'));
+    document.getElementById("tabMeeting").style.display = tab === 'meeting' ? 'block' : 'none';
+    document.getElementById("tabAttendanceStatus").style.display = tab === 'attendanceStatus' ? 'block' : 'none';
+    document.getElementById("tabService").style.display = tab === 'service' ? 'block' : 'none';
+    document.getElementById("tabEmergency").style.display = tab === 'emergency' ? 'block' : 'none';
+    document.getElementById("tabGroupTable").style.display = tab === 'grouptable' ? 'block' : 'none';
+
+    if (tab === 'meeting') document.getElementById("btnTabMeeting").classList.add('active');
+    if (tab === 'attendanceStatus') { document.getElementById("btnTabAttendanceStatus").classList.add('active'); loadAttendanceCalendar(); }
+    if (tab === 'service') { document.getElementById("btnTabService").classList.add('active'); loadServiceReports(); }
+    if (tab === 'emergency') { document.getElementById("btnTabEmergency").classList.add('active'); loadEmergencyData(); }
+    if (tab === 'grouptable') { document.getElementById("btnTabGroupTable").classList.add('active'); loadGroupTableView(); }
+  }
+
+  async function loadMeetingData() {
+    const data = await apiCall("getMeetingAttendanceData");
+    if (data) {
+      groupData = data.groups;
+      const select = document.getElementById("meetingScheduleSelect");
+      select.innerHTML = "";
+      data.schedule.forEach(s => {
+        const opt = document.createElement("option");
+        opt.value = s.date;
+        opt.dataset.type = s.type;
+        opt.text = `${s.date} [${s.type}] ${s.note ? '('+s.note+')' : ''}`;
+        select.appendChild(opt);
+      });
+      onMeetingDateChanged();
+    }
+  }
+
+  function onMeetingDateChanged() {
+    const sel = document.getElementById("meetingScheduleSelect");
+    const opt = sel.options[sel.selectedIndex];
+    if (opt) {
+      document.getElementById("meetingTypeDisplay").value = opt.dataset.type;
+      checkDateCompletionStatus(opt.value);
+    }
+    renderGroupMembers();
+  }
+
+  async function checkDateCompletionStatus(mDate) {
+    const res = await apiCall("getMeetingStatusByDate", { meetingDate: mDate });
+    if (res) {
+      ["사랑", "기쁨", "평화"].forEach(g => {
+        const b = document.getElementById("badge_" + g);
+        if (res.recordedGroups.includes(g)) {
+          b.className = "badge bg-success";
+          b.innerText = `완료 (${res.groupCounts[g]}명)`;
+        } else {
+          b.className = "badge bg-secondary";
+          b.innerText = "미입력";
+        }
+      });
+    }
+  }
+
+  function switchGroup(grp, btn) {
+    currentGroup = grp;
+    document.querySelectorAll("#groupTabButtons .btn").forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderGroupMembers();
+  }
+
+  function renderGroupMembers() {
+    document.getElementById("groupTitle").innerText = `${currentGroup} 집단 명부`;
+    const container = document.getElementById("groupMemberList");
+    container.innerHTML = "";
+    const members = groupData[currentGroup] || [];
+
+    let rOpts = "";
+    absentReasonList.forEach(r => { rOpts += `<option value="${r}">${r}</option>`; });
+
+    members.forEach(m => {
+      const div = document.createElement("div");
+      div.className = "member-row d-flex justify-content-between align-items-center";
+      div.innerHTML = `
+        <div class="form-check mb-0">
+          <input class="form-check-input chk-att" type="checkbox" id="att_${m.id}" checked onchange="calcMeeting()">
+          <label class="form-check-label fw-bold" for="att_${m.id}">${m.nameKo || m.nameRu}</label>
+        </div>
+        <div id="absentBox_${m.id}" style="display:none; max-width:210px;" class="d-flex gap-1">
+          <select class="form-select form-select-sm" id="absentReason_${m.id}" onchange="toggleCustomReason('${m.id}')">
+            ${rOpts}
+          </select>
+          <input type="text" class="form-control form-control-sm" id="absentCustom_${m.id}" placeholder="사유" style="display:none;">
+        </div>
+      `;
+      container.appendChild(div);
+    });
+    calcMeeting();
+  }
+
+  function toggleCustomReason(id) {
+    const sel = document.getElementById("absentReason_" + id).value;
+    document.getElementById("absentCustom_" + id).style.display = (sel === "메모(직접입력)" || sel === "기타") ? "block" : "none";
+  }
+
+  function calcMeeting() {
+    const chks = document.querySelectorAll(".chk-att");
+    let present = 0;
+    chks.forEach(cb => {
+      const id = cb.id.replace("att_", "");
+      const box = document.getElementById("absentBox_" + id);
+      if (cb.checked) {
+        present++;
+        if (box) box.style.display = "none";
+      } else {
+        if (box) box.style.display = "flex";
+      }
+    });
+
+    document.getElementById("groupStats").innerText = `총원: ${chks.length}명 / 출석: ${present}명`;
+    const guests = Number(document.getElementById("guestCount").value) || 0;
+    document.getElementById("totalMeetingDisplay").innerText = `집단 계수 참석자: ${present + guests} 명`;
+  }
+
+  async function saveMeetingAttendance() {
+    const absents = [];
+    const members = groupData[currentGroup] || [];
+    document.querySelectorAll(".chk-att").forEach(cb => {
+      if (!cb.checked) {
+        const id = cb.id.replace("att_", "");
+        const m = members.find(item => item.id === id);
+        let r = document.getElementById("absentReason_" + id).value;
+        if (r === "메모(직접입력)" || r === "기타") {
+          r = document.getElementById("absentCustom_" + id).value || r;
+        }
+        absents.push(`${m.nameKo || m.nameRu}(${r})`);
+      }
+    });
+
+    const mDate = document.getElementById("meetingScheduleSelect").value;
+    const payload = {
+      meetingDate: mDate,
+      meetingType: document.getElementById("meetingTypeDisplay").value,
+      groupName: currentGroup,
+      memberCount: document.querySelectorAll(".chk-att:checked").length,
+      absentListText: absents.join(", "),
+      guestCount: document.getElementById("guestCount").value,
+      guestRemarks: document.getElementById("guestRemarks").value,
+      recorderName: activeElder
+    };
+
+    const res = await apiCall("submitMeetingAttendance", payload);
+    alert(res.message);
+    checkDateCompletionStatus(mDate);
+  }
+
+  // --- 집회 참석 현황 (캘린더 / S-88) ---
+  async function loadAttendanceCalendar() {
+    const ym = document.getElementById("calendarMonthPicker").value;
+    const res = await apiCall("getMeetingAttendanceCalendarData", { yearMonth: ym });
+    if (res) {
+      document.getElementById("sumWeekdays").innerText = res.summary.weekdayCount;
+      document.getElementById("sumWeekdayTotal").innerText = res.summary.weekdayTotal;
+      document.getElementById("avgWeekday").innerText = res.summary.weekdayAvg;
+
+      document.getElementById("sumWeekends").innerText = res.summary.weekendCount;
+      document.getElementById("sumWeekendTotal").innerText = res.summary.weekendTotal;
+      document.getElementById("avgWeekend").innerText = res.summary.weekendAvg;
+
+      const tb = document.getElementById("attendanceCalendarBody");
+      tb.innerHTML = "";
+
+      const dKeys = Object.keys(res.events).sort();
+      if (dKeys.length === 0) {
+        tb.innerHTML = `<tr><td colspan="4" class="text-muted py-3">해당 월에 기록된 집회 데이터가 없습니다.</td></tr>`;
+        return;
+      }
+
+      dKeys.forEach(d => {
+        const ev = res.events[d];
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><strong>${ev.date}</strong></td>
+          <td><span class="badge ${ev.type === '평일 집회' ? 'bg-primary' : 'bg-success'}">${ev.type}</span></td>
+          <td><strong>${ev.total}</strong> 명</td>
+          <td class="text-start"><small>${ev.absents.join('<br>') || '결석자 없음'}</small></td>
+        `;
+        tb.appendChild(tr);
+      });
+    }
+  }
+
+  // --- 봉사 보고 현황 & 9대 지표 ---
+  async function loadServiceReports() {
+    const month = document.getElementById("serviceMonthFilter").value;
+    const res = await apiCall("getMonthlyServiceDashboard", { month: month });
+    if (res) {
+      const m = res.metrics;
+      document.getElementById("m_totalActive").innerText = m.totalActivePublishers;
+      document.getElementById("m_pubReport").innerText = m.pubReportCount;
+      document.getElementById("m_pubStudies").innerText = m.pubStudies;
+      document.getElementById("m_auxReport").innerText = m.auxReportCount;
+      document.getElementById("m_auxHours").innerText = m.auxHours;
+      document.getElementById("m_auxStudies").innerText = m.auxStudies;
+      document.getElementById("m_regReport").innerText = m.regReportCount;
+      document.getElementById("m_regHours").innerText = m.regHours;
+      document.getElementById("m_regStudies").innerText = m.regStudies;
+
+      const badge = document.getElementById("collectionStatusBadge");
+      if (m.isCollecting) {
+        badge.className = "badge bg-warning text-dark";
+        badge.innerText = "수집중";
+      } else {
+        badge.className = "badge bg-success";
+        badge.innerText = "완료";
+      }
+
+      const tb = document.getElementById("serviceReportBody");
+      tb.innerHTML = "";
+      res.reports.forEach(r => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${r.name}</td><td>${r.role}</td><td>${r.participated}</td><td>${r.hours}</td><td>${r.credit}</td><td>${r.studies}</td><td>${r.remarks}</td>`;
+        tb.appendChild(tr);
+      });
+
+      const d = new Date().getDate();
+      const alertBox = document.getElementById("unsubmittedAlertBox");
+      if (d >= 7 && d <= 15) {
+        let content = "";
+        ["사랑", "기쁨", "평화"].forEach(g => {
+          const list = res.unsubmitted[g] || [];
+          if (list.length > 0) {
+            content += `<strong>[${g} 집단]</strong>: ` + list.map(p => p.name).join(", ") + `<br>`;
+          }
+        });
+        document.getElementById("unsubmittedListContent").innerHTML = content || "모든 전도인이 보고를 완료했습니다.";
+        alertBox.style.display = "block";
+      } else {
+        alertBox.style.display = "none";
+      }
+    }
+  }
+
+  // --- 순회방문 S-21 전체 일괄 ZIP 다운로드 ---
+  async function downloadAllS21Zip() {
+    const btn = document.getElementById("btnDownloadAllS21");
+    btn.disabled = true;
+    btn.innerText = "⏳ 전체 S-21 PDF 생성 및 압축 중...";
+
+    const res = await apiCall("downloadAllActiveS21Zip");
+    btn.disabled = false;
+    btn.innerText = "📦 순회방문 S-21 전체 일괄 다운로드 (ZIP)";
+
+    if (res && res.success) {
+      alert(`총 ${res.totalCount}명의 S-21(한국어) 카드가 성공적으로 압축되었습니다.\n다운로드를 시작합니다.`);
+      window.open(res.downloadUrl, '_blank');
+    } else {
+      alert(res ? res.message : "다운로드 생성에 실패했습니다.");
+    }
+  }
+
+  // --- 비상연락망 (틀 고정 횡스크롤 & 한글 단일화 & 가족 묶음) ---
+  async function loadEmergencyData() {
+    const list = await apiCall("getEmergencyContacts");
+    if (Array.isArray(list)) {
+      const tb = document.getElementById("emergencyBody");
+      tb.innerHTML = "";
+      let curFamily = "";
+      let bgToggle = false;
+
+      list.forEach(item => {
+        if (item.familyId !== curFamily) {
+          curFamily = item.familyId;
+          bgToggle = !bgToggle;
+        }
+        const tr = document.createElement("tr");
+        tr.className = bgToggle ? "family-group-even" : "family-group-odd";
+        const guardianInfo = item.guardianName ? `${item.guardianName}` : "-";
+        
+        tr.innerHTML = `
+          <td class="sticky-col-1 nowrap"><strong>${item.group}</strong></td>
+          <td class="sticky-col-2 nowrap"><strong>${item.nameKo}</strong></td>
+          <td class="nowrap">${item.relation}</td>
+          <td class="nowrap">${item.phone || '-'}</td>
+          <td class="nowrap">${guardianInfo}</td>
+          <td class="nowrap">${item.guardianPhone || '-'}</td>
+          <td class="nowrap">${item.address || '-'}</td>
+          <td class="nowrap"><small>${item.notes || ''}</small></td>
+        `;
+        tb.appendChild(tr);
+      });
+    }
+  }
+
+  // --- 집단 편성표 웹 뷰어 & PDF ---
+  async function loadGroupTableView() {
+    const res = await apiCall("getGroupTableSheetData");
+    if (res && res.success) {
+      document.getElementById("btnGroupTablePdf").href = res.pdfUrl;
+      document.getElementById("groupTableIframe").src = res.embedUrl;
+    } else {
+      alert(res ? res.message : "집단 편성표를 불러오지 못했습니다.");
+    }
+  }
+</script>
+</body>
+</html>
