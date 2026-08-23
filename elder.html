@@ -121,7 +121,7 @@
     <div id="tabAttendanceStatus" class="card p-3 mb-4" style="display:none;">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h5 class="fw-bold mb-0">집회 참석 현황 및 S-88 집계</h5>
-        <input type="month" id="calendarMonthPicker" class="form-control w-auto fw-bold" value="2026-09" onchange="loadAttendanceCalendar()">
+        <input type="month" id="calendarMonthPicker" class="form-control w-auto fw-bold" value="2026-08" onchange="loadAttendanceCalendar()">
       </div>
 
       <div class="row g-2 text-center mb-4">
@@ -163,18 +163,19 @@
             📦 순회방문 S-21 전체 일괄 다운로드 (ZIP)
           </button>
           <select id="serviceMonthFilter" class="form-select w-auto fw-bold" onchange="loadServiceReports()">
-            <option value="2026-09">2026-09</option><option value="2026-10">2026-10</option>
-            <option value="2026-11">2026-11</option><option value="2026-12">2026-12</option>
-            <option value="2027-01">2027-01</option><option value="2027-02">2027-02</option>
-            <option value="2027-03">2027-03</option><option value="2027-04">2027-04</option>
-            <option value="2027-05">2027-05</option><option value="2027-06">2027-06</option>
-            <option value="2027-07">2027-07</option><option value="2027-08">2027-08</option>
-            <option value="2027-09">2027-09</option><option value="2027-10">2027-10</option>
-            <option value="2027-11">2027-11</option><option value="2027-12">2027-12</option>
-            <option value="2028-01">2028-01</option><option value="2028-02">2028-02</option>
-            <option value="2028-03">2028-03</option><option value="2028-04">2028-04</option>
-            <option value="2028-05">2028-05</option><option value="2028-06">2028-06</option>
-            <option value="2028-07">2028-07</option><option value="2028-08">2028-08</option>
+            <option value="2026-08">2026-08</option><option value="2026-09" selected>2026-09</option>
+            <option value="2026-10">2026-10</option><option value="2026-11">2026-11</option>
+            <option value="2026-12">2026-12</option><option value="2027-01">2027-01</option>
+            <option value="2027-02">2027-02</option><option value="2027-03">2027-03</option>
+            <option value="2027-04">2027-04</option><option value="2027-05">2027-05</option>
+            <option value="2027-06">2027-06</option><option value="2027-07">2027-07</option>
+            <option value="2027-08">2027-08</option><option value="2027-09">2027-09</option>
+            <option value="2027-10">2027-10</option><option value="2027-11">2027-11</option>
+            <option value="2027-12">2027-12</option><option value="2028-01">2028-01</option>
+            <option value="2028-02">2028-02</option><option value="2028-03">2028-03</option>
+            <option value="2028-04">2028-04</option><option value="2028-05">2028-05</option>
+            <option value="2028-06">2028-06</option><option value="2028-07">2028-07</option>
+            <option value="2028-08">2028-08</option>
           </select>
         </div>
       </div>
@@ -212,7 +213,7 @@
       </div>
     </div>
 
-    <!-- [탭 4: 비상연락망 (틀 고정 횡스크롤 & 가족 묶음)] -->
+    <!-- [탭 4: 비상연락망 (틀 고정 횡스크롤 & 가족 묶음, 기타정보 제외)] -->
     <div id="tabEmergency" class="card p-3 mb-4" style="display:none;">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h5 class="fw-bold mb-0">회중 비상연락망 (가족별 정렬)</h5>
@@ -230,7 +231,6 @@
               <th>보호자/비상연락</th>
               <th>보호자 연락처</th>
               <th>실거주지 주소</th>
-              <th>기타정보</th>
             </tr>
           </thead>
           <tbody id="emergencyBody"></tbody>
@@ -238,14 +238,23 @@
       </div>
     </div>
 
-    <!-- [탭 5: 집단 편성표 웹 뷰어 & PDF] -->
+    <!-- [탭 5: 집단 편성표 이미지 뷰어 & 다운로드] -->
     <div id="tabGroupTable" class="card p-3 mb-4" style="display:none;">
-      <div class="d-flex justify-content-between align-items-center mb-3">
+      <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
         <h5 class="fw-bold mb-0">회중 집단 편성표</h5>
-        <a id="btnGroupTablePdf" href="#" target="_blank" class="btn btn-sm btn-primary fw-bold">📄 PDF 다운로드</a>
+        <div class="d-flex gap-2">
+          <a id="btnGroupTableImgDownload" href="#" target="_blank" class="btn btn-sm btn-success fw-bold shadow-sm">
+            💾 그림(JPG) 다운로드
+          </a>
+          <a id="btnGroupTablePdf" href="#" target="_blank" class="btn btn-sm btn-outline-primary fw-bold shadow-sm">
+            📄 PDF 다운로드
+          </a>
+        </div>
       </div>
-      <div class="ratio ratio-4x3" style="min-height: 650px; border: 1px solid #dee2e6; border-radius: 8px; overflow: hidden;">
-        <iframe id="groupTableIframe" src="" frameborder="0"></iframe>
+      
+      <div class="text-center p-2 bg-white rounded border shadow-sm" style="overflow-x: auto;">
+        <div id="groupTableLoading" class="py-5 text-muted fw-bold">⏳ 집단 편성표 이미지를 불러오는 중...</div>
+        <img id="groupTableImage" src="" alt="집단 편성표" class="img-fluid rounded" style="max-width: 100%; height: auto; display: none;">
       </div>
     </div>
 
@@ -315,7 +324,6 @@
       document.getElementById("loginScreen").style.display = "none";
       document.getElementById("mainDashboard").style.display = "block";
       
-      // 전도인 마스터에서 로그인된 성명의 pubId 확인
       resolveElderPubId(activeElder);
       loadMeetingData();
     } else {
@@ -588,7 +596,7 @@
     }
   }
 
-  // --- 비상연락망 (틀 고정 횡스크롤 & 가족 묶음) ---
+  // --- 비상연락망 (틀 고정 횡스크롤 & 가족 묶음, 기타정보 제외) ---
   async function loadEmergencyData() {
     const list = await apiCall("getEmergencyContacts");
     if (Array.isArray(list)) {
@@ -614,20 +622,34 @@
           <td class="nowrap">${guardianInfo}</td>
           <td class="nowrap">${item.guardianPhone || '-'}</td>
           <td class="nowrap">${item.address || '-'}</td>
-          <td class="nowrap"><small>${item.notes || ''}</small></td>
         `;
         tb.appendChild(tr);
       });
     }
   }
 
-  // --- 집단 편성표 웹 뷰어 & PDF ---
+  // --- 집단 편성표 이미지 뷰어 & 다운로드 ---
   async function loadGroupTableView() {
+    const loadingDiv = document.getElementById("groupTableLoading");
+    const imgEl = document.getElementById("groupTableImage");
+    loadingDiv.style.display = "block";
+    loadingDiv.innerText = "⏳ 집단 편성표 이미지를 불러오는 중...";
+    imgEl.style.display = "none";
+
     const res = await apiCall("getGroupTableSheetData");
     if (res && res.success) {
+      imgEl.src = res.imageUrl;
+      imgEl.onload = () => {
+        loadingDiv.style.display = "none";
+        imgEl.style.display = "inline-block";
+      };
+      imgEl.onerror = () => {
+        loadingDiv.innerText = "이미지를 표시하지 못했습니다. 상단 다운로드 버튼을 이용해 주세요.";
+      };
+      document.getElementById("btnGroupTableImgDownload").href = res.downloadUrl || res.imageUrl;
       document.getElementById("btnGroupTablePdf").href = res.pdfUrl;
-      document.getElementById("groupTableIframe").src = res.embedUrl;
     } else {
+      loadingDiv.innerText = "집단 편성표를 불러오지 못했습니다.";
       alert(res ? res.message : "집단 편성표를 불러오지 못했습니다.");
     }
   }
