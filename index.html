@@ -31,7 +31,7 @@
 <div class="container" style="max-width: 560px;">
 
   <div class="d-flex justify-content-between align-items-center mb-3">
-    <span class="badge bg-primary px-3 py-2 fs-6" id="badgeServiceYear">2027 봉사연도</span>
+    <span class="badge bg-primary px-3 py-2 fs-6" id="badgeServiceYear">봉사연도</span>
     <div class="btn-group">
       <button class="btn btn-sm btn-outline-secondary" id="btnKo" onclick="setLanguage('ko')">한국어</button>
       <button class="btn btn-sm btn-outline-secondary" id="btnRu" onclick="setLanguage('ru')">Русский</button>
@@ -51,7 +51,7 @@
   <div id="tabReportSection">
     <div class="text-center mb-3">
       <h4 class="fw-bold" id="txtTitle">회중 야외봉사 보고</h4>
-      <div class="fw-bold text-primary fs-5" id="txtCurrentMonth">2026년 9월</div>
+      <div class="fw-bold text-primary fs-5" id="txtCurrentMonth"></div>
     </div>
 
     <div id="closedAlert" class="alert alert-warning text-center fw-bold shadow-sm" style="display:none;"></div>
@@ -175,8 +175,16 @@
 </div>
 
 <script>
-  // ⭐️ 백엔드로 배포한 Google Apps Script 웹 앱 URL을 입력하세요.
+  // ⭐️ 백엔드로 배포한 Google Apps Script 웹 앱 URL
   const API_URL = "https://script.google.com/macros/s/AKfycbz_Qn5OrZ39cY4NMkIcsvQQTXrFgjrJ-a9ov3PThyp5oMxfuBoQnR4WkpLHl6cIGRsp/exec";
+
+  // ⭐️ 현재 날짜 기준 봉사연도 계산 함수 (9월~익년 8월 기준)
+  function getCurrentServiceYear() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1; // 1~12월
+    return month >= 9 ? year + 1 : year;
+  }
 
   let currentLang = 'ko';
   let publishers = [];
@@ -198,7 +206,8 @@
 
   const i18n = {
     ko: {
-      badge: "2027 봉사연도", title: "회중 야외봉사 보고", sec1: "1. 본인 확인",
+      badge: (yr) => `${yr} 봉사연도`,
+      title: "회중 야외봉사 보고", sec1: "1. 본인 확인",
       searchPh: "이름 검색 (검색어 입력 시 자동 필터링)",
       selectPub: "전도인을 선택하세요", selectPio: "파이오니아 성명 선택",
       tabReport: "야외봉사 보고", tabPioneer: "파이오니아 개인 기록",
@@ -215,7 +224,8 @@
       rememberPin: "이 기기에서 비밀번호(PIN) 기억하기"
     },
     ru: {
-      badge: "2027 служебный год", title: "Отчет о служении", sec1: "1. Подтверждение личности",
+      badge: (yr) => `${yr} служебный год`,
+      title: "Отчет о служении", sec1: "1. Подтверждение личности",
       searchPh: "Поиск имени (фильтрация при вводе)",
       selectPub: "Выберите возвещателя", selectPio: "Выберите пионера",
       tabReport: "Отчет о служении", tabPioneer: "Личные записи пионера",
@@ -232,7 +242,8 @@
       rememberPin: "Запомнить PIN-код на этом устройстве"
     },
     en: {
-      badge: "2027 Service Year", title: "Field Service Report", sec1: "1. Identity Verification",
+      badge: (yr) => `${yr} Service Year`,
+      title: "Field Service Report", sec1: "1. Identity Verification",
       searchPh: "Search name (auto-filtered)",
       selectPub: "Select Publisher", selectPio: "Select Pioneer",
       tabReport: "Field Service Report", tabPioneer: "Pioneer Personal Records",
@@ -311,7 +322,9 @@
     document.getElementById('btn' + lang.charAt(0).toUpperCase() + lang.slice(1)).classList.add('btn-primary', 'text-white');
 
     const t = i18n[lang];
-    document.getElementById("badgeServiceYear").innerText = t.badge;
+    const serviceYear = getCurrentServiceYear(); // ⭐️ 현재 봉사연도 계산
+    document.getElementById("badgeServiceYear").innerText = t.badge(serviceYear); // ⭐️ 뱃지 연도 갱신
+
     document.getElementById("txtTitle").innerText = t.title;
     document.getElementById("txtSec1").innerText = t.sec1;
     document.getElementById("nameSearch").placeholder = t.searchPh;
@@ -622,6 +635,10 @@
       document.getElementById("confirmPin").value = "";
     }
   }
+</script>
+</body>
+</html>
+
 </script>
 </body>
 </html>
