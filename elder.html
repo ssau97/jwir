@@ -23,9 +23,18 @@
     .scroll-list { max-height: 360px; overflow-y: scroll; border: 1px solid #dee2e6; border-radius: 8px; padding: 10px; }
     .member-row { border-bottom: 1px solid #edf2f7; padding: 8px 0; }
     
-    /* 가족 묶음별 배경색 교차 */
-    .family-group-even { background-color: #ffffff; }
-    .family-group-odd { background-color: #f1f5f9; }
+    /* ⭐️ 가족 묶음별 배경색 교차 (부트스트랩 td 오버라이드 및 고정열 반영) */
+    .family-group-even td {
+      background-color: #ffffff !important;
+    }
+    .family-group-odd td {
+      background-color: #eef4fc !important; /* 부드러운 파스텔 블루-그레이 */
+    }
+    
+    /* ⭐️ 가족이 바뀔 때 상단 구분선 */
+    .family-border-top td {
+      border-top: 2px solid #cbd5e1 !important;
+    }
     
     /* 비상연락망 틀 고정 (Sticky Header & Left Columns) */
     .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
@@ -603,7 +612,7 @@
     }
   }
 
-  // --- 비상연락망 (틀 고정 횡스크롤 & 가족 묶음, 기타정보 제외) ---
+  // ⭐️ --- 비상연락망 (가족별 지그재그 배경색 및 틀 고정, 기타정보 제외) ---
   async function loadEmergencyData() {
     const list = await apiCall("getEmergencyContacts");
     if (Array.isArray(list)) {
@@ -612,13 +621,16 @@
       let curFamily = "";
       let bgToggle = false;
 
-      list.forEach(item => {
+      list.forEach((item, idx) => {
+        let isNewFamily = false;
         if (item.familyId !== curFamily) {
           curFamily = item.familyId;
           bgToggle = !bgToggle;
+          if (idx > 0) isNewFamily = true; // 첫 행 제외하고 가족 바뀔 때 구분선
         }
+
         const tr = document.createElement("tr");
-        tr.className = bgToggle ? "family-group-even" : "family-group-odd";
+        tr.className = (bgToggle ? "family-group-even" : "family-group-odd") + (isNewFamily ? " family-border-top" : "");
         const guardianInfo = item.guardianName ? `${item.guardianName}` : "-";
         
         tr.innerHTML = `
@@ -635,7 +647,7 @@
     }
   }
 
-  // --- 집단 편성표 링크 로드 ---
+  // ⭐️ --- 집단 편성표 링크 로드 ---
   async function loadGroupTableView() {
     const res = await apiCall("getGroupTableSheetData");
     if (res && res.success) {
