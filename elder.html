@@ -24,7 +24,7 @@
     .member-row { border-bottom: 1px solid #edf2f7; padding: 8px 0; }
     .member-row:last-child { border-bottom: none; }
     
-    /* ⭐️ 대형 체크박스 스타일 */
+    /* 대형 체크박스 스타일 */
     .chk-att { width: 1.35rem; height: 1.35rem; cursor: pointer; }
 
     /* 가족 묶음별 배경색 교차 */
@@ -113,13 +113,12 @@
         <span class="badge bg-primary fs-6 py-2 px-3" id="groupStats">총원: 0명 / 출석: 0명</span>
       </div>
 
-            <!-- 성명 / 출석 / 사유 헤더 바 -->
+      <!-- 성명 / 출석 / 사유 헤더 바 -->
       <div class="d-flex justify-content-between align-items-center bg-light px-3 py-2 rounded border mb-2 fw-bold text-secondary" style="font-size: 0.88rem;">
         <div style="flex: 2;">성명</div>
         <div style="flex: 1; text-align: center;">출석</div>
         <div style="flex: 2; text-align: end;">구분 / 사유</div>
       </div>
-
 
       <div id="groupMemberList" class="scroll-list mb-3"></div>
 
@@ -296,7 +295,7 @@
       </div>
 
       <div id="groupTableContent" style="display:none;">
-        <!-- 1. 3개 집단 명단 카드 (PC 3열 / 모바일 1열) -->
+        <!-- 1. 3개 집단 명단 카드 -->
         <div class="row g-3 mb-4">
           <div class="col-md-4">
             <div class="card group-card h-100 shadow-sm">
@@ -413,6 +412,7 @@
   let currentGroup = "사랑";
   let activeElder = "";
   let activeElderPubId = ""; // PIN 변경 대상 고유 ID
+  let currentMeetingDetails = {}; // ⭐️ 선택된 일자의 저장된 출석 상세 데이터
 
   const absentReasonList = ["모름", "병가", "외부강연", "여행", "타 집회 참석", "타 대회 참석", "기타", "메모(직접입력)"];
 
@@ -494,30 +494,32 @@
     }
   }
 
-  function onMeetingDateChanged() {
+  async function onMeetingDateChanged() {
     const sel = document.getElementById("meetingScheduleSelect");
     const opt = sel.options[sel.selectedIndex];
     if (opt) {
       document.getElementById("meetingTypeDisplay").value = opt.dataset.type;
-      checkDateCompletionStatus(opt.value);
+      await checkDateCompletionStatus(opt.value);
     }
-    renderGroupMembers();
   }
 
+  // ⭐️ --- 선택된 일자의 집단별 완료 뱃지 및 기존 저장 데이터 로드 ---
   async function checkDateCompletionStatus(mDate) {
     const res = await apiCall("getMeetingStatusByDate", { meetingDate: mDate });
-    if (res) {
-      ["사랑", "기쁨", "평화"].forEach(g => {
-        const b = document.getElementById("badge_" + g);
-        if (res.recordedGroups.includes(g)) {
-          b.className = "badge bg-success";
-          b.innerText = `완료 (${res.groupCounts[g]}명)`;
-        } else {
-          b.className = "badge bg-secondary";
-          b.innerText = "미입력";
-        }
-      });
-    }
+    currentMeetingDetails = res ? (res.groupDetails || {}) : {};
+
+    ["사랑", "기쁨", "평화"].forEach(g => {
+      const b = document.getElementById("badge_" + g);
+      if (res && res.recordedGroups && res.recordedGroups.includes(g)) {
+        b.className = "badge bg-success";
+        b.innerText = `완료 (${res.groupCounts[g]}명)`;
+      } else {
+        b.className = "badge bg-secondary";
+        b.innerText = "미입력";
+      }
+    });
+
+    renderGroupMembers();
   }
 
   function switchGroup(grp, btn) {
@@ -527,7 +529,7 @@
     renderGroupMembers();
   }
 
-  // ⭐️ --- 집단 명부 렌더링 (이름 | 대형 체크박스 | 대면/줌/결석사유 동적 전환) ---
+  // ⭐️ --- 집단 명부 렌더링 (이전 저장 데이터 자동 복원) ---
   function renderGroupMembers() {
     document.getElementById("groupTitle").innerText = `${currentGroup} 집단 명부`;
     const container = document.getElementById("groupMemberList");
@@ -537,40 +539,107 @@
     let rOpts = "";
     absentReasonList.forEach(r => { rOpts += `<option value="${r}">${r}</option>`; });
 
+    // 이전 저장 데이터 파싱
+    const savedGroupData = currentMeetingDetails[currentGroup] || null;
+    const absentMap = {};
+    const zoomList = [];
+
+    if (savedGroupData && savedGroupData.absentListText) {
+      let rawText = savedGroupData.absentListText;
+
+      // 줌 참석자 목록 추출 [줌: 이름1, 이름2]
+      if (rawText.includes("[줌:")) {
+        const zMatch = rawText.match(/\[줌:\s*([^\]]+)\]/);
+        if (zMatch) {
+          zMatch[1].split(",").forEach(n => zoomList.push(n.trim()));
+          rawText = rawText.replace(zMatch[0], "").trim();
+        }
+      }
+
+      // 결석자 및 사유 파싱
+      rawText.split(",").forEach(item => {
+        const trimmed = item.trim();
+        if (!trimmed) return;
+        const match = trimmed.match(/^([^\(]+)\(([^\)]*)\)$/);
+        if (match) {
+          absentMap[match[1].trim()] = match[2].trim();
+        } else {
+          absentMap[trimmed] = "모름";
+        }
+      });
+    }
+
     members.forEach(m => {
+      const pName = m.nameKo || m.nameRu;
+      
+      // 결석 여부 확인
+      let isAbsent = false;
+      let reasonVal = "모름";
+      let customReasonText = "";
+
+      if (savedGroupData) {
+        if (absentMap.hasOwnProperty(pName) || absentMap.hasOwnProperty(m.nameKo) || absentMap.hasOwnProperty(m.nameRu)) {
+          isAbsent = true;
+          const r = absentMap[pName] || absentMap[m.nameKo] || absentMap[m.nameRu] || "모름";
+          if (absentReasonList.includes(r)) {
+            reasonVal = r;
+          } else {
+            reasonVal = "메모(직접입력)";
+            customReasonText = r;
+          }
+        }
+      }
+
+      // 줌 참석 여부 확인
+      const isZoom = zoomList.includes(pName) || zoomList.includes(m.nameKo) || zoomList.includes(m.nameRu);
+
       const div = document.createElement("div");
       div.className = "member-row d-flex justify-content-between align-items-center py-2";
-            div.innerHTML = `
+      div.innerHTML = `
         <div class="fw-bold" style="flex: 2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-          ${m.nameKo || m.nameRu}
+          ${pName}
         </div>
         <div style="flex: 1; text-align: center;">
-          <input class="form-check-input chk-att" type="checkbox" id="att_${m.id}" checked onchange="onAttendanceToggle('${m.id}')">
+          <input class="form-check-input chk-att" type="checkbox" id="att_${m.id}" ${isAbsent ? '' : 'checked'} onchange="onAttendanceToggle('${m.id}')">
         </div>
         <div style="flex: 2; text-align: end;" class="d-flex justify-content-end align-items-center gap-1">
-          <!-- ⭐️ 출석 체크 시: 대면 / 줌 드롭다운 -->
-          <div id="presentModeBox_${m.id}" style="width: 100px;">
+          <!-- 출석 체크 시: 대면 / 줌 드롭다운 -->
+          <div id="presentModeBox_${m.id}" style="width: 100px; display: ${isAbsent ? 'none' : 'block'};">
             <select class="form-select form-select-sm fw-bold text-primary sel-present-mode" id="presentMode_${m.id}" onchange="calcMeeting()">
-              <option value="대면" selected>🏛️ 대면</option>
-              <option value="줌">💻 줌</option>
+              <option value="대면" ${isZoom ? '' : 'selected'}>🏛️ 대면</option>
+              <option value="줌" ${isZoom ? 'selected' : ''}>💻 줌</option>
             </select>
           </div>
 
-          <!-- ⭐️ 결석 시: 결석 사유 드롭다운 + 기타 메모 -->
-          <div id="absentBox_${m.id}" style="display:none; max-width: 220px;" class="gap-1">
+          <!-- 결석 시: 결석 사유 드롭다운 + 기타 메모 -->
+          <div id="absentBox_${m.id}" style="display: ${isAbsent ? 'flex' : 'none'}; max-width: 220px;" class="gap-1">
             <select class="form-select form-select-sm sel-absent-reason" id="absentReason_${m.id}" onchange="toggleCustomReason('${m.id}')">
               ${rOpts}
             </select>
-            <input type="text" class="form-control form-control-sm" id="absentCustom_${m.id}" placeholder="사유" style="display:none; max-width: 90px;">
+            <input type="text" class="form-control form-control-sm" id="absentCustom_${m.id}" value="${customReasonText}" placeholder="사유" style="display: ${reasonVal === '메모(직접입력)' || reasonVal === '기타' ? 'block' : 'none'}; max-width: 90px;">
           </div>
         </div>
       `;
       container.appendChild(div);
+
+      // 결석 사유 드롭다운 값 복원
+      if (isAbsent) {
+        document.getElementById("absentReason_" + m.id).value = reasonVal;
+      }
     });
+
+    // 방문자 수 및 메모 복원
+    if (savedGroupData) {
+      document.getElementById("guestCount").value = savedGroupData.guestCount || 0;
+      document.getElementById("guestRemarks").value = savedGroupData.guestRemarks || "";
+    } else {
+      document.getElementById("guestCount").value = 0;
+      document.getElementById("guestRemarks").value = "";
+    }
+
     calcMeeting();
   }
 
-  // ⭐️ --- 체크박스 토글 시 대면/줌 vs 결석 사유 전환 ---
   function onAttendanceToggle(id) {
     const isChecked = document.getElementById("att_" + id).checked;
     const presentBox = document.getElementById("presentModeBox_" + id);
@@ -591,7 +660,6 @@
     document.getElementById("absentCustom_" + id).style.display = (sel === "메모(직접입력)" || sel === "기타") ? "block" : "none";
   }
 
-  // ⭐️ --- 집회 참석자 실시간 계산 (대면 / 줌 / 결석 세부 집계) ---
   function calcMeeting() {
     const chks = document.querySelectorAll(".chk-att");
     let present = 0;
@@ -608,13 +676,10 @@
       }
     });
 
-    // ⭐️ 상단 뱃지: [총원: N명 / 출석: N명] 깔끔하게 표시
     document.getElementById("groupStats").innerText = `총원: ${chks.length}명 / 출석: ${present}명`;
-    
     const guests = Number(document.getElementById("guestCount").value) || 0;
     const total = present + guests;
 
-    // ⭐️ 하단 계수 참석자: 총 인원 및 대면/줌/방문자 3줄 구조 표시
     document.getElementById("totalMeetingDisplay").innerHTML = `
       <div class="fs-3 fw-bold mb-1">${total} 명</div>
       <div class="fs-6 fw-normal text-dark">집단 성원 ${present}명 (대면: ${inPersonCount} / 줌: ${zoomCount})</div>
@@ -622,20 +687,35 @@
     `;
   }
 
+  // ⭐️ --- 집회 참석 기록 저장 (대면/줌 및 결석 상세 포맷) ---
   async function saveMeetingAttendance() {
     const absents = [];
+    const zoomAttendees = [];
     const members = groupData[currentGroup] || [];
+
     document.querySelectorAll(".chk-att").forEach(cb => {
+      const id = cb.id.replace("att_", "");
+      const m = members.find(item => item.id === id);
+      const pName = m.nameKo || m.nameRu;
+
       if (!cb.checked) {
-        const id = cb.id.replace("att_", "");
-        const m = members.find(item => item.id === id);
         let r = document.getElementById("absentReason_" + id).value;
         if (r === "메모(직접입력)" || r === "기타") {
           r = document.getElementById("absentCustom_" + id).value || r;
         }
-        absents.push(`${m.nameKo || m.nameRu}(${r})`);
+        absents.push(`${pName}(${r})`);
+      } else {
+        const mode = document.getElementById("presentMode_" + id) ? document.getElementById("presentMode_" + id).value : "대면";
+        if (mode === "줌") {
+          zoomAttendees.push(pName);
+        }
       }
     });
+
+    let finalAbsentText = absents.join(", ");
+    if (zoomAttendees.length > 0) {
+      finalAbsentText += (finalAbsentText ? " " : "") + `[줌: ${zoomAttendees.join(", ")}]`;
+    }
 
     const mDate = document.getElementById("meetingScheduleSelect").value;
     const payload = {
@@ -643,7 +723,7 @@
       meetingType: document.getElementById("meetingTypeDisplay").value,
       groupName: currentGroup,
       memberCount: document.querySelectorAll(".chk-att:checked").length,
-      absentListText: absents.join(", "),
+      absentListText: finalAbsentText,
       guestCount: document.getElementById("guestCount").value,
       guestRemarks: document.getElementById("guestRemarks").value,
       recorderName: activeElder
@@ -651,7 +731,7 @@
 
     const res = await apiCall("submitMeetingAttendance", payload);
     alert(res.message);
-    checkDateCompletionStatus(mDate);
+    await checkDateCompletionStatus(mDate);
   }
 
   // --- 집회 참석 현황 (캘린더 / S-88) ---
@@ -794,7 +874,7 @@
     }
   }
 
-  // ⭐️ --- 집단 편성표 네이티브 렌더링 (비상연락망 방식) ---
+  // --- 집단 편성표 네이티브 렌더링 (비상연락망 방식) ---
   async function loadGroupTableView() {
     const loadingDiv = document.getElementById("groupTableLoading");
     const contentDiv = document.getElementById("groupTableContent");
@@ -822,8 +902,8 @@
     ["사랑", "기쁨", "평화"].forEach((grp, gIdx) => {
       const listEl = document.getElementById("list_" + grp);
       listEl.innerHTML = "";
-      const colA = gIdx * 4 + 1; // 1열, 5열, 9열
-      const colB = gIdx * 4 + 3; // 3열, 7열, 11열
+      const colA = gIdx * 4 + 1;
+      const colB = gIdx * 4 + 3;
 
       for (let r = 6; r <= 15; r++) {
         [colA, colB].forEach(col => {
@@ -865,7 +945,7 @@
       <tr><th class="table-light">회중 회계</th><td>Стефан 김 태 규</td><th class="table-light">구역 관리</th><td>Семин 김 세 민</td></tr>
       <tr><th class="table-light">왕국회관 운영위원</th><td>Владимир 이 현 규</td><th class="table-light">생활과 봉사 감독자</th><td>Андрей 유 안드레이</td></tr>
       <tr><th class="table-light">공개강연 조정자</th><td>Егор 송 민</td><th class="table-light">청소 감독자 / 보조조언자</th><td>Илья 이 차 우 / Алексей 이 동 원</td></tr>
-      <tr><th class="table-light">안내인 (윤번)</th><td>Стефан | Михаи́л | Егор | Семин</td><th class="table-light">서적 관리</th><td>Семин 김 세 민</td></tr>
+      <tr><th class="table-light">안내인 (윤번)</th><td>Стефан | Михаи́л | Егор | Семин</td><th class="table-light">서적 관리</th><td>Се민 김 세 민</td></tr>
     `;
   }
 
