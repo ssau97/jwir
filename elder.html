@@ -113,12 +113,13 @@
         <span class="badge bg-primary fs-6 py-2 px-3" id="groupStats">총원: 0명 / 출석: 0명</span>
       </div>
 
-      <!-- ⭐️ 성명 / 출석 / 사유 헤더 바 -->
+            <!-- 성명 / 출석 / 사유 헤더 바 -->
       <div class="d-flex justify-content-between align-items-center bg-light px-3 py-2 rounded border mb-2 fw-bold text-secondary" style="font-size: 0.88rem;">
-        <div style="flex: 2;">성명 (전도인)</div>
+        <div style="flex: 2;">성명</div>
         <div style="flex: 1; text-align: center;">출석</div>
         <div style="flex: 2; text-align: end;">구분 / 사유</div>
       </div>
+
 
       <div id="groupMemberList" class="scroll-list mb-3"></div>
 
@@ -539,9 +540,9 @@
     members.forEach(m => {
       const div = document.createElement("div");
       div.className = "member-row d-flex justify-content-between align-items-center py-2";
-      div.innerHTML = `
+            div.innerHTML = `
         <div class="fw-bold" style="flex: 2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-          ${m.nameKo || m.nameRu} <span class="text-muted small fw-normal">(${m.role || ''})</span>
+          ${m.nameKo || m.nameRu}
         </div>
         <div style="flex: 1; text-align: center;">
           <input class="form-check-input chk-att" type="checkbox" id="att_${m.id}" checked onchange="onAttendanceToggle('${m.id}')">
@@ -607,9 +608,18 @@
       }
     });
 
-    document.getElementById("groupStats").innerText = `총원: ${chks.length}명 / 출석: ${present}명 (대면 ${inPersonCount} / 줌 ${zoomCount})`;
+    // ⭐️ 상단 뱃지: [총원: N명 / 출석: N명] 깔끔하게 표시
+    document.getElementById("groupStats").innerText = `총원: ${chks.length}명 / 출석: ${present}명`;
+    
     const guests = Number(document.getElementById("guestCount").value) || 0;
-    document.getElementById("totalMeetingDisplay").innerText = `집단 계수 참석자: ${present + guests} 명 (성원 ${present} + 방문자 ${guests})`;
+    const total = present + guests;
+
+    // ⭐️ 하단 계수 참석자: 총 인원 및 대면/줌/방문자 3줄 구조 표시
+    document.getElementById("totalMeetingDisplay").innerHTML = `
+      <div class="fs-3 fw-bold mb-1">${total} 명</div>
+      <div class="fs-6 fw-normal text-dark">집단 성원 ${present}명 (대면: ${inPersonCount} / 줌: ${zoomCount})</div>
+      <div class="fs-6 fw-normal text-secondary">방문자 ${guests}명</div>
+    `;
   }
 
   async function saveMeetingAttendance() {
