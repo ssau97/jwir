@@ -46,7 +46,7 @@
     .role-badge { font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; font-weight: 600; }
     .table-plan th, .table-plan td { font-size: 0.85rem; vertical-align: middle; text-align: center; }
 
-    /* ⭐️ 집단 편성표 가족 박스 스타일 */
+    /* 집단 편성표 가족 박스 스타일 */
     .family-card-box {
       background-color: #ffffff;
       border: 1px solid #e2e8f0;
@@ -203,39 +203,8 @@
           <button class="btn btn-sm btn-outline-danger fw-bold shadow-sm" id="btnDownloadAllS21" onclick="downloadAllS21Zip()">
             📦 순회방문 S-21 전체 일괄 다운로드 (ZIP)
           </button>
-          <select id="serviceMonthFilter" class="form-select w-auto fw-bold" onchange="loadServiceReports()">
-            <optgroup label="📅 2026 봉사연도">
-              <option value="2026-08">2026-08</option>
-            </optgroup>
-            <optgroup label="📅 2027 봉사연도">
-              <option value="2026-09" selected>2026-09</option>
-              <option value="2026-10">2026-10</option>
-              <option value="2026-11">2026-11</option>
-              <option value="2026-12">2026-12</option>
-              <option value="2027-01">2027-01</option>
-              <option value="2027-02">2027-02</option>
-              <option value="2027-03">2027-03</option>
-              <option value="2027-04">2027-04</option>
-              <option value="2027-05">2027-05</option>
-              <option value="2027-06">2027-06</option>
-              <option value="2027-07">2027-07</option>
-              <option value="2027-08">2027-08</option>
-            </optgroup>
-            <optgroup label="📅 2028 봉사연도">
-              <option value="2027-09">2027-09</option>
-              <option value="2027-10">2027-10</option>
-              <option value="2027-11">2027-11</option>
-              <option value="2027-12">2027-12</option>
-              <option value="2028-01">2028-01</option>
-              <option value="2028-02">2028-02</option>
-              <option value="2028-03">2028-03</option>
-              <option value="2028-04">2028-04</option>
-              <option value="2028-05">2028-05</option>
-              <option value="2028-06">2028-06</option>
-              <option value="2028-07">2028-07</option>
-              <option value="2028-08">2028-08</option>
-            </optgroup>
-          </select>
+          <!-- ⭐️ [영구 자동화] 자바스크립트가 매년 자동으로 optgroup 생성 -->
+          <select id="serviceMonthFilter" class="form-select w-auto fw-bold" onchange="loadServiceReports()"></select>
         </div>
       </div>
 
@@ -314,7 +283,7 @@
       </div>
 
       <div id="groupTableContent" style="display:none;">
-        <!-- 1. 3개 집단 명단 카드 (가족별 박스 렌더링) -->
+        <!-- 1. 3개 집단 명단 카드 -->
         <div class="row g-3 mb-4">
           <div class="col-md-4">
             <div class="card group-card h-100 shadow-sm">
@@ -490,7 +459,11 @@
 
     if (tab === 'meeting') document.getElementById("btnTabMeeting").classList.add('active');
     if (tab === 'attendanceStatus') { document.getElementById("btnTabAttendanceStatus").classList.add('active'); loadAttendanceCalendar(); }
-    if (tab === 'service') { document.getElementById("btnTabService").classList.add('active'); loadServiceReports(); }
+    if (tab === 'service') { 
+      document.getElementById("btnTabService").classList.add('active'); 
+      populateServiceMonthDropdown(); // ⭐️ 연도 드롭다운 자동 생성
+      loadServiceReports(); 
+    }
     if (tab === 'emergency') { document.getElementById("btnTabEmergency").classList.add('active'); loadEmergencyData(); }
     if (tab === 'grouptable') { document.getElementById("btnTabGroupTable").classList.add('active'); loadGroupTableView(); }
     if (tab === 'pinchange') document.getElementById("btnTabPinChange").classList.add('active');
@@ -778,6 +751,45 @@
     }
   }
 
+  // ⭐️ [영구 자동화] 봉사 보고 현황 드롭다운 자동 생성 (2026년부터 미래 연도까지)
+  function populateServiceMonthDropdown() {
+    const sel = document.getElementById("serviceMonthFilter");
+    if (!sel || sel.dataset.populated === "true") return;
+
+    const now = new Date();
+    const curYear = now.getFullYear();
+    const curMonth = now.getMonth() + 1;
+    const curSY = curMonth >= 9 ? curYear + 1 : curYear;
+    const curYM = `${curYear}-${curMonth < 10 ? '0' + curMonth : curMonth}`;
+
+    sel.innerHTML = "";
+    for (let sy = 2026; sy <= curSY + 1; sy++) {
+      const startYr = sy - 1;
+      const grp = document.createElement("optgroup");
+      grp.label = `📅 ${sy} 봉사연도`;
+
+      const months = (sy === 2026) 
+        ? ["2026-08"] 
+        : [
+          `${startYr}-09`, `${startYr}-10`, `${startYr}-11`, `${startYr}-12`,
+          `${sy}-01`, `${sy}-02`, `${sy}-03`, `${sy}-04`,
+          `${sy}-05`, `${sy}-06`, `${sy}-07`, `${sy}-08`
+        ];
+
+      months.forEach(m => {
+        const opt = document.createElement("option");
+        opt.value = m;
+        opt.text = m;
+        if (m === curYM || (sy === curSY && m.endsWith("-09") && !sel.value)) {
+          opt.selected = true;
+        }
+        grp.appendChild(opt);
+      });
+      sel.appendChild(grp);
+    }
+    sel.dataset.populated = "true";
+  }
+
   // --- 봉사 보고 현황 & 9대 지표 ---
   async function loadServiceReports() {
     const month = document.getElementById("serviceMonthFilter").value;
@@ -900,7 +912,7 @@
     }
   }
 
-  // ⭐️ --- 가족별 묶음 렌더링 함수 ---
+  // --- 가족별 묶음 렌더링 함수 ---
   function renderNativeGroupTable(data) {
     const groups = data.groups || {};
 
@@ -975,7 +987,6 @@
     `;
   }
 
-  // ⭐️ --- 신분 및 직책 뱃지 생성 함수 ---
   function getMemberRoleBadge(m) {
     if (m.title === "장로" && m.role === "정규 파이오니아") return '<span class="badge bg-primary role-badge">장로/정파</span>';
     if (m.title === "봉사의 종" && m.role === "정규 파이오니아") return '<span class="badge bg-info text-dark role-badge">종/정파</span>';
