@@ -27,7 +27,7 @@
     /* 대형 체크박스 스타일 */
     .chk-att { width: 1.35rem; height: 1.35rem; cursor: pointer; }
 
-    /* 가족 묶음별 배경색 교차 */
+    /* 비상연락망 가족 묶음별 배경색 교차 */
     .family-group-even td { background-color: #ffffff !important; }
     .family-group-odd td { background-color: #eef4fc !important; }
     .family-border-top td { border-top: 2px solid #cbd5e1 !important; }
@@ -43,10 +43,29 @@
     .group-card { border-radius: 12px; border: 1px solid #cbd5e1; overflow: hidden; }
     .group-card-header { font-weight: 700; padding: 10px 12px; font-size: 1.05rem; }
     .group-leader-box { background-color: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 8px 12px; font-size: 0.9rem; }
-    .group-member-item { padding: 6px 12px; border-bottom: 1px solid #f1f5f9; font-size: 0.92rem; }
-    .group-member-item:nth-child(even) { background-color: #f8fafc; }
     .role-badge { font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; font-weight: 600; }
     .table-plan th, .table-plan td { font-size: 0.85rem; vertical-align: middle; text-align: center; }
+
+    /* ⭐️ 집단 편성표 가족 박스 스타일 */
+    .family-card-box {
+      background-color: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      margin: 8px;
+      padding: 6px 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    }
+    .family-card-box:nth-child(even) {
+      background-color: #f8fafc;
+    }
+    .family-card-member {
+      padding: 4px 6px;
+      font-size: 0.9rem;
+      border-bottom: 1px dashed #f1f5f9;
+    }
+    .family-card-member:last-child {
+      border-bottom: none;
+    }
   </style>
 </head>
 <body class="py-3">
@@ -278,12 +297,12 @@
       </div>
     </div>
 
-    <!-- [탭 5: 집단 편성표 (비상연락망 방식 네이티브 뷰)] -->
+    <!-- [탭 5: 집단 편성표 (가족별 묶음 네이티브 뷰)] -->
     <div id="tabGroupTable" class="card p-3 mb-4" style="display:none;">
       <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
         <div>
           <h5 class="fw-bold text-primary mb-0">회중 집단 편성표</h5>
-          <small class="text-muted">인천 러시아어 회중</small>
+          <small class="text-muted">인천 러시아어 회중 (가족별 편성)</small>
         </div>
         <button class="btn btn-sm btn-outline-primary fw-bold shadow-sm" onclick="window.print()">
           🖨️ 인쇄 / PDF 저장
@@ -295,27 +314,27 @@
       </div>
 
       <div id="groupTableContent" style="display:none;">
-        <!-- 1. 3개 집단 명단 카드 -->
+        <!-- 1. 3개 집단 명단 카드 (가족별 박스 렌더링) -->
         <div class="row g-3 mb-4">
           <div class="col-md-4">
             <div class="card group-card h-100 shadow-sm">
               <div class="group-card-header bg-danger text-white text-center">Группа “Любовь” | 사랑 집단</div>
               <div class="group-leader-box" id="lead_사랑"></div>
-              <div class="card-body p-0" id="list_사랑"></div>
+              <div class="card-body p-1" id="list_사랑"></div>
             </div>
           </div>
           <div class="col-md-4">
             <div class="card group-card h-100 shadow-sm">
               <div class="group-card-header bg-warning text-dark text-center">Группа “Радость” | 기쁨 집단</div>
               <div class="group-leader-box" id="lead_기쁨"></div>
-              <div class="card-body p-0" id="list_기쁨"></div>
+              <div class="card-body p-1" id="list_기쁨"></div>
             </div>
           </div>
           <div class="col-md-4">
             <div class="card group-card h-100 shadow-sm">
               <div class="group-card-header bg-success text-white text-center">Группа “Мир” | 평화 집단</div>
               <div class="group-leader-box" id="lead_평화"></div>
-              <div class="card-body p-0" id="list_평화"></div>
+              <div class="card-body p-1" id="list_평화"></div>
             </div>
           </div>
         </div>
@@ -412,7 +431,7 @@
   let currentGroup = "사랑";
   let activeElder = "";
   let activeElderPubId = ""; // PIN 변경 대상 고유 ID
-  let currentMeetingDetails = {}; // ⭐️ 선택된 일자의 저장된 출석 상세 데이터
+  let currentMeetingDetails = {}; // 선택된 일자의 저장된 출석 상세 데이터
 
   const absentReasonList = ["모름", "병가", "외부강연", "여행", "타 집회 참석", "타 대회 참석", "기타", "메모(직접입력)"];
 
@@ -503,7 +522,6 @@
     }
   }
 
-  // ⭐️ --- 선택된 일자의 집단별 완료 뱃지 및 기존 저장 데이터 로드 ---
   async function checkDateCompletionStatus(mDate) {
     const res = await apiCall("getMeetingStatusByDate", { meetingDate: mDate });
     currentMeetingDetails = res ? (res.groupDetails || {}) : {};
@@ -529,7 +547,7 @@
     renderGroupMembers();
   }
 
-  // ⭐️ --- 집단 명부 렌더링 (이전 저장 데이터 자동 복원) ---
+  // --- 집단 명부 렌더링 ---
   function renderGroupMembers() {
     document.getElementById("groupTitle").innerText = `${currentGroup} 집단 명부`;
     const container = document.getElementById("groupMemberList");
@@ -539,7 +557,6 @@
     let rOpts = "";
     absentReasonList.forEach(r => { rOpts += `<option value="${r}">${r}</option>`; });
 
-    // 이전 저장 데이터 파싱
     const savedGroupData = currentMeetingDetails[currentGroup] || null;
     const absentMap = {};
     const zoomList = [];
@@ -547,7 +564,6 @@
     if (savedGroupData && savedGroupData.absentListText) {
       let rawText = savedGroupData.absentListText;
 
-      // 줌 참석자 목록 추출 [줌: 이름1, 이름2]
       if (rawText.includes("[줌:")) {
         const zMatch = rawText.match(/\[줌:\s*([^\]]+)\]/);
         if (zMatch) {
@@ -556,7 +572,6 @@
         }
       }
 
-      // 결석자 및 사유 파싱
       rawText.split(",").forEach(item => {
         const trimmed = item.trim();
         if (!trimmed) return;
@@ -572,7 +587,6 @@
     members.forEach(m => {
       const pName = m.nameKo || m.nameRu;
       
-      // 결석 여부 확인
       let isAbsent = false;
       let reasonVal = "모름";
       let customReasonText = "";
@@ -590,7 +604,6 @@
         }
       }
 
-      // 줌 참석 여부 확인
       const isZoom = zoomList.includes(pName) || zoomList.includes(m.nameKo) || zoomList.includes(m.nameRu);
 
       const div = document.createElement("div");
@@ -603,7 +616,6 @@
           <input class="form-check-input chk-att" type="checkbox" id="att_${m.id}" ${isAbsent ? '' : 'checked'} onchange="onAttendanceToggle('${m.id}')">
         </div>
         <div style="flex: 2; text-align: end;" class="d-flex justify-content-end align-items-center gap-1">
-          <!-- 출석 체크 시: 대면 / 줌 드롭다운 -->
           <div id="presentModeBox_${m.id}" style="width: 100px; display: ${isAbsent ? 'none' : 'block'};">
             <select class="form-select form-select-sm fw-bold text-primary sel-present-mode" id="presentMode_${m.id}" onchange="calcMeeting()">
               <option value="대면" ${isZoom ? '' : 'selected'}>🏛️ 대면</option>
@@ -611,7 +623,6 @@
             </select>
           </div>
 
-          <!-- 결석 시: 결석 사유 드롭다운 + 기타 메모 -->
           <div id="absentBox_${m.id}" style="display: ${isAbsent ? 'flex' : 'none'}; max-width: 220px;" class="gap-1">
             <select class="form-select form-select-sm sel-absent-reason" id="absentReason_${m.id}" onchange="toggleCustomReason('${m.id}')">
               ${rOpts}
@@ -622,13 +633,11 @@
       `;
       container.appendChild(div);
 
-      // 결석 사유 드롭다운 값 복원
       if (isAbsent) {
         document.getElementById("absentReason_" + m.id).value = reasonVal;
       }
     });
 
-    // 방문자 수 및 메모 복원
     if (savedGroupData) {
       document.getElementById("guestCount").value = savedGroupData.guestCount || 0;
       document.getElementById("guestRemarks").value = savedGroupData.guestRemarks || "";
@@ -687,7 +696,6 @@
     `;
   }
 
-  // ⭐️ --- 집회 참석 기록 저장 (대면/줌 및 결석 상세 포맷) ---
   async function saveMeetingAttendance() {
     const absents = [];
     const zoomAttendees = [];
@@ -882,8 +890,8 @@
     contentDiv.style.display = "none";
 
     const res = await apiCall("getGroupTableSheetData");
-    if (res && res.success && Array.isArray(res.data)) {
-      renderNativeGroupTable(res.data);
+    if (res && res.success && res.groups) {
+      renderNativeGroupTable(res);
       loadingDiv.style.display = "none";
       contentDiv.style.display = "block";
     } else {
@@ -892,30 +900,48 @@
     }
   }
 
+  // ⭐️ --- 가족별 묶음 렌더링 함수 ---
   function renderNativeGroupTable(data) {
-    // 1. 집단 감독자 / 보조자 렌더링
-    document.getElementById("lead_사랑").innerHTML = `<strong>감독자:</strong> ${data[5][1]}<br><strong>보조자:</strong> ${data[5][3]}`;
-    document.getElementById("lead_기쁨").innerHTML = `<strong>감독자:</strong> ${data[5][5]}<br><strong>보조자:</strong> ${data[5][7]}`;
-    document.getElementById("lead_평화").innerHTML = `<strong>감독자:</strong> ${data[5][9]}<br><strong>보조자:</strong> ${data[5][11]}`;
+    const groups = data.groups || {};
 
-    // 2. 집단별 명부 렌더링 (6행 ~ 15행)
-    ["사랑", "기쁨", "평화"].forEach((grp, gIdx) => {
+    // 1. 집단 감독자 / 보조자 렌더링
+    document.getElementById("lead_사랑").innerHTML = `<strong>감독자:</strong> Семён 김윤상 <span class="badge bg-primary role-badge">장로</span><br><strong>보조자:</strong> Стефан 김태규 <span class="badge bg-info text-dark role-badge">종</span>`;
+    document.getElementById("lead_기쁨").innerHTML = `<strong>감독자:</strong> Павел 이한선 <span class="badge bg-primary role-badge">장로</span><br><strong>보조자:</strong> Семин 김세민 <span class="badge bg-info text-dark role-badge">종</span>`;
+    document.getElementById("lead_평화").innerHTML = `<strong>감독자:</strong> Егор 송민 <span class="badge bg-primary role-badge">장로</span><br><strong>보조자:</strong> Олег 올렉 니 <span class="badge bg-secondary role-badge">종</span>`;
+
+    // 2. 집단별 명부 가족 단위 렌더링
+    ["사랑", "기쁨", "평화"].forEach(grp => {
       const listEl = document.getElementById("list_" + grp);
       listEl.innerHTML = "";
-      const colA = gIdx * 4 + 1;
-      const colB = gIdx * 4 + 3;
+      const familyMap = groups[grp] || {};
+      const fKeys = Object.keys(familyMap).sort();
 
-      for (let r = 6; r <= 15; r++) {
-        [colA, colB].forEach(col => {
-          const val = String(data[r] ? data[r][col] || "" : "").trim();
-          if (val) {
-            const div = document.createElement("div");
-            div.className = "group-member-item d-flex justify-content-between align-items-center";
-            div.innerHTML = formatMemberNameHtml(val);
-            listEl.appendChild(div);
-          }
+      fKeys.forEach(fId => {
+        const members = familyMap[fId];
+        const fBox = document.createElement("div");
+        fBox.className = "family-card-box";
+
+        members.forEach(m => {
+          const div = document.createElement("div");
+          div.className = "family-card-member d-flex justify-content-between align-items-center";
+
+          const headIcon = m.isHead ? "🏠 " : "";
+          const relText = m.relation ? `<small class="text-muted ms-1">(${m.relation})</small>` : "";
+          const badge = getMemberRoleBadge(m);
+
+          div.innerHTML = `
+            <div>
+              <strong>${headIcon}${m.nameRu || m.nameKo}</strong>
+              <span class="text-secondary small">(${m.nameKo})</span>
+              ${relText}
+            </div>
+            <div>${badge}</div>
+          `;
+          fBox.appendChild(div);
         });
-      }
+
+        listEl.appendChild(fBox);
+      });
     });
 
     // 3. 통계 요약
@@ -945,21 +971,21 @@
       <tr><th class="table-light">회중 회계</th><td>Стефан 김 태 규</td><th class="table-light">구역 관리</th><td>Семин 김 세 민</td></tr>
       <tr><th class="table-light">왕국회관 운영위원</th><td>Владимир 이 현 규</td><th class="table-light">생활과 봉사 감독자</th><td>Андрей 유 안드레이</td></tr>
       <tr><th class="table-light">공개강연 조정자</th><td>Егор 송 민</td><th class="table-light">청소 감독자 / 보조조언자</th><td>Илья 이 차 우 / Алексей 이 동 원</td></tr>
-      <tr><th class="table-light">안내인 (윤번)</th><td>Стефан | Михаи́л | Егор | Семин</td><th class="table-light">서적 관리</th><td>Се민 김 세 민</td></tr>
+      <tr><th class="table-light">안내인 (윤번)</th><td>Стефан | Михаи́л | Егор | Семин</td><th class="table-light">서적 관리</th><td>Семин 김 세 민</td></tr>
     `;
   }
 
-  function formatMemberNameHtml(raw) {
-    let text = raw;
-    let badge = "";
-    if (text.includes("С ОП")) { badge = '<span class="badge bg-primary role-badge">장로/정파</span>'; text = text.replace("С ОП", ""); }
-    else if (text.includes("ПС ОП")) { badge = '<span class="badge bg-info text-dark role-badge">종/정파</span>'; text = text.replace("ПС ОП", ""); }
-    else if (text.includes("ОП")) { badge = '<span class="badge bg-success role-badge">정파</span>'; text = text.replace("ОП", ""); }
-    else if (text.includes("ПС")) { badge = '<span class="badge bg-secondary role-badge">종</span>'; text = text.replace("ПС", ""); }
-    else if (text.includes("НВ")) { badge = '<span class="badge bg-warning text-dark role-badge">미침례</span>'; text = text.replace("НВ", ""); }
-    else if (text.includes("Д")) { badge = '<span class="badge bg-light text-muted border role-badge">자녀</span>'; text = text.replace("Д", ""); }
-
-    return `<span>${text.trim()}</span> ${badge}`;
+  // ⭐️ --- 신분 및 직책 뱃지 생성 함수 ---
+  function getMemberRoleBadge(m) {
+    if (m.title === "장로" && m.role === "정규 파이오니아") return '<span class="badge bg-primary role-badge">장로/정파</span>';
+    if (m.title === "봉사의 종" && m.role === "정규 파이오니아") return '<span class="badge bg-info text-dark role-badge">종/정파</span>';
+    if (m.title === "장로") return '<span class="badge bg-primary role-badge">장로</span>';
+    if (m.title === "봉사의 종") return '<span class="badge bg-info text-dark role-badge">종</span>';
+    if (m.role === "정규 파이오니아") return '<span class="badge bg-success role-badge">정파</span>';
+    if (m.role === "보조 파이오니아") return '<span class="badge bg-warning text-dark role-badge">보파</span>';
+    if (m.role === "미침례") return '<span class="badge bg-secondary role-badge">미침례</span>';
+    if (m.status === "자녀") return '<span class="badge bg-light text-muted border role-badge">자녀</span>';
+    return '';
   }
 
   // --- 🔐 장로/봉사의 종 개인 PIN 변경 로직 ---
