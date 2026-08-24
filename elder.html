@@ -20,22 +20,26 @@
     .card { border-radius: 14px; border: none; box-shadow: 0 4px 14px rgba(0,0,0,0.06); }
     .nav-tabs .nav-link { font-weight: 700; color: #495057; }
     .nav-tabs .nav-link.active { color: #0d6efd; border-bottom: 3px solid #0d6efd; }
-    .scroll-list { max-height: 360px; overflow-y: scroll; border: 1px solid #dee2e6; border-radius: 8px; padding: 10px; }
+    .scroll-list { max-height: 380px; overflow-y: scroll; border: 1px solid #dee2e6; border-radius: 8px; padding: 6px 10px; }
     .member-row { border-bottom: 1px solid #edf2f7; padding: 8px 0; }
+    .member-row:last-child { border-bottom: none; }
     
-    /* ⭐️ 가족 묶음별 배경색 교차 (부트스트랩 td 오버라이드 및 고정열 반영) */
+    /* ⭐️ 대형 체크박스 스타일 */
+    .chk-att { width: 1.35rem; height: 1.35rem; cursor: pointer; }
+
+    /* 가족 묶음별 배경색 교차 */
     .family-group-even td { background-color: #ffffff !important; }
     .family-group-odd td { background-color: #eef4fc !important; }
     .family-border-top td { border-top: 2px solid #cbd5e1 !important; }
     
-    /* 비상연락망 틀 고정 (Sticky Header & Left Columns) */
+    /* 비상연락망 틀 고정 */
     .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
     .nowrap { white-space: nowrap; }
     .sticky-col-1 { position: sticky; left: 0; background-color: inherit; z-index: 2; min-width: 65px; text-align: center; border-right: 1px solid #dee2e6; }
     .sticky-col-2 { position: sticky; left: 65px; background-color: inherit; z-index: 2; min-width: 90px; border-right: 2px solid #adb5bd; }
     thead th.sticky-col-1, thead th.sticky-col-2 { z-index: 3; background-color: #e9ecef; }
 
-    /* ⭐️ 집단 편성표 네이티브 카드 전용 스타일 */
+    /* 집단 편성표 네이티브 카드 전용 스타일 */
     .group-card { border-radius: 12px; border: 1px solid #cbd5e1; overflow: hidden; }
     .group-card-header { font-weight: 700; padding: 10px 12px; font-size: 1.05rem; }
     .group-leader-box { background-color: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 8px 12px; font-size: 0.9rem; }
@@ -105,26 +109,34 @@
       </div>
 
       <div class="d-flex justify-content-between align-items-center mb-2">
-        <span class="fw-bold" id="groupTitle">사랑 집단 명부</span>
-        <span class="badge bg-primary fs-6" id="groupStats">총원: 0명 / 출석: 0명</span>
+        <span class="fw-bold fs-6" id="groupTitle">사랑 집단 명부</span>
+        <span class="badge bg-primary fs-6 py-2 px-3" id="groupStats">총원: 0명 / 출석: 0명</span>
       </div>
+
+      <!-- ⭐️ 성명 / 출석 / 사유 헤더 바 -->
+      <div class="d-flex justify-content-between align-items-center bg-light px-3 py-2 rounded border mb-2 fw-bold text-secondary" style="font-size: 0.88rem;">
+        <div style="flex: 2;">성명 (전도인)</div>
+        <div style="flex: 1; text-align: center;">출석</div>
+        <div style="flex: 2; text-align: end;">구분 / 사유</div>
+      </div>
+
       <div id="groupMemberList" class="scroll-list mb-3"></div>
 
       <div class="row g-2 mb-3">
         <div class="col-5">
           <label class="form-label fw-bold">방문/관심자 수</label>
-          <input type="number" id="guestCount" class="form-control" value="0" min="0" oninput="calcMeeting()">
+          <input type="number" id="guestCount" class="form-control form-control-lg" value="0" min="0" oninput="calcMeeting()">
         </div>
         <div class="col-7">
           <label class="form-label fw-bold">방문자 메모</label>
-          <input type="text" id="guestRemarks" class="form-control" placeholder="타회중 방문 등">
+          <input type="text" id="guestRemarks" class="form-control form-control-lg" placeholder="타회중 방문 등">
         </div>
       </div>
 
       <div class="alert alert-primary text-center fw-bold fs-5 mb-3" id="totalMeetingDisplay">
         집단 집계 참석자: 0 명
       </div>
-      <button class="btn btn-success btn-lg w-100 fw-bold" onclick="saveMeetingAttendance()">해당 집단 참석 기록 저장</button>
+      <button class="btn btn-success btn-lg w-100 fw-bold shadow" onclick="saveMeetingAttendance()">해당 집단 참석 기록 저장</button>
     </div>
 
     <!-- [탭 2: 집회 참석 현황 캘린더 & S-88 집계] -->
@@ -172,7 +184,6 @@
           <button class="btn btn-sm btn-outline-danger fw-bold shadow-sm" id="btnDownloadAllS21" onclick="downloadAllS21Zip()">
             📦 순회방문 S-21 전체 일괄 다운로드 (ZIP)
           </button>
-          <!-- ⭐️ [수정] 봉사연도별 optgroup 그룹화 드롭다운 -->
           <select id="serviceMonthFilter" class="form-select w-auto fw-bold" onchange="loadServiceReports()">
             <optgroup label="📅 2026 봉사연도">
               <option value="2026-08">2026-08</option>
@@ -515,6 +526,7 @@
     renderGroupMembers();
   }
 
+  // ⭐️ --- 집단 명부 렌더링 (이름 | 대형 체크박스 | 대면/줌/결석사유 동적 전환) ---
   function renderGroupMembers() {
     document.getElementById("groupTitle").innerText = `${currentGroup} 집단 명부`;
     const container = document.getElementById("groupMemberList");
@@ -526,21 +538,50 @@
 
     members.forEach(m => {
       const div = document.createElement("div");
-      div.className = "member-row d-flex justify-content-between align-items-center";
+      div.className = "member-row d-flex justify-content-between align-items-center py-2";
       div.innerHTML = `
-        <div class="form-check mb-0">
-          <input class="form-check-input chk-att" type="checkbox" id="att_${m.id}" checked onchange="calcMeeting()">
-          <label class="form-check-label fw-bold" for="att_${m.id}">${m.nameKo || m.nameRu}</label>
+        <div class="fw-bold" style="flex: 2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+          ${m.nameKo || m.nameRu} <span class="text-muted small fw-normal">(${m.role || ''})</span>
         </div>
-        <div id="absentBox_${m.id}" style="display:none; max-width:210px;" class="d-flex gap-1">
-          <select class="form-select form-select-sm" id="absentReason_${m.id}" onchange="toggleCustomReason('${m.id}')">
-            ${rOpts}
-          </select>
-          <input type="text" class="form-control form-control-sm" id="absentCustom_${m.id}" placeholder="사유" style="display:none;">
+        <div style="flex: 1; text-align: center;">
+          <input class="form-check-input chk-att" type="checkbox" id="att_${m.id}" checked onchange="onAttendanceToggle('${m.id}')">
+        </div>
+        <div style="flex: 2; text-align: end;" class="d-flex justify-content-end align-items-center gap-1">
+          <!-- ⭐️ 출석 체크 시: 대면 / 줌 드롭다운 -->
+          <div id="presentModeBox_${m.id}" style="width: 100px;">
+            <select class="form-select form-select-sm fw-bold text-primary sel-present-mode" id="presentMode_${m.id}" onchange="calcMeeting()">
+              <option value="대면" selected>🏛️ 대면</option>
+              <option value="줌">💻 줌</option>
+            </select>
+          </div>
+
+          <!-- ⭐️ 결석 시: 결석 사유 드롭다운 + 기타 메모 -->
+          <div id="absentBox_${m.id}" style="display:none; max-width: 220px;" class="gap-1">
+            <select class="form-select form-select-sm sel-absent-reason" id="absentReason_${m.id}" onchange="toggleCustomReason('${m.id}')">
+              ${rOpts}
+            </select>
+            <input type="text" class="form-control form-control-sm" id="absentCustom_${m.id}" placeholder="사유" style="display:none; max-width: 90px;">
+          </div>
         </div>
       `;
       container.appendChild(div);
     });
+    calcMeeting();
+  }
+
+  // ⭐️ --- 체크박스 토글 시 대면/줌 vs 결석 사유 전환 ---
+  function onAttendanceToggle(id) {
+    const isChecked = document.getElementById("att_" + id).checked;
+    const presentBox = document.getElementById("presentModeBox_" + id);
+    const absentBox = document.getElementById("absentBox_" + id);
+
+    if (isChecked) {
+      if (presentBox) presentBox.style.display = "block";
+      if (absentBox) absentBox.style.display = "none";
+    } else {
+      if (presentBox) presentBox.style.display = "none";
+      if (absentBox) absentBox.style.display = "flex";
+    }
     calcMeeting();
   }
 
@@ -549,23 +590,26 @@
     document.getElementById("absentCustom_" + id).style.display = (sel === "메모(직접입력)" || sel === "기타") ? "block" : "none";
   }
 
+  // ⭐️ --- 집회 참석자 실시간 계산 (대면 / 줌 / 결석 세부 집계) ---
   function calcMeeting() {
     const chks = document.querySelectorAll(".chk-att");
     let present = 0;
+    let inPersonCount = 0;
+    let zoomCount = 0;
+
     chks.forEach(cb => {
       const id = cb.id.replace("att_", "");
-      const box = document.getElementById("absentBox_" + id);
       if (cb.checked) {
         present++;
-        if (box) box.style.display = "none";
-      } else {
-        if (box) box.style.display = "flex";
+        const mode = document.getElementById("presentMode_" + id) ? document.getElementById("presentMode_" + id).value : "대면";
+        if (mode === "줌") zoomCount++;
+        else inPersonCount++;
       }
     });
 
-    document.getElementById("groupStats").innerText = `총원: ${chks.length}명 / 출석: ${present}명`;
+    document.getElementById("groupStats").innerText = `총원: ${chks.length}명 / 출석: ${present}명 (대면 ${inPersonCount} / 줌 ${zoomCount})`;
     const guests = Number(document.getElementById("guestCount").value) || 0;
-    document.getElementById("totalMeetingDisplay").innerText = `집단 계수 참석자: ${present + guests} 명`;
+    document.getElementById("totalMeetingDisplay").innerText = `집단 계수 참석자: ${present + guests} 명 (성원 ${present} + 방문자 ${guests})`;
   }
 
   async function saveMeetingAttendance() {
