@@ -759,6 +759,7 @@
     }
   }
 
+  // ⭐️ 선택된 봉사연도의 12개월 데이터 렌더링 (0 값은 빈칸으로 깔끔하게 표시)
   function renderPioneerRecordTable() {
     if (!pioneerAllRecords) return;
     const yr = Number(document.getElementById("pioneerYearFilter").value) || getCurrentServiceYear();
@@ -782,18 +783,22 @@
       const tr = document.createElement("tr");
       
       const isPart = r.participated === "예";
+      const hVal = Number(r.hours) || 0;
+      const cVal = Number(r.credit) || 0;
+      const sVal = Number(r.studies) || 0;
+
       if (isPart) {
-        sumHours += Number(r.hours) || 0;
-        sumCredit += Number(r.credit) || 0;
-        sumStudies += Number(r.studies) || 0;
+        sumHours += hVal;
+        sumCredit += cVal;
+        sumStudies += sVal;
       }
 
       tr.innerHTML = `
         <td><strong>${m}</strong></td>
         <td>${r.participated}</td>
-        <td>${r.hours || 0}</td>
-        <td>${r.credit || 0}</td>
-        <td>${r.studies || 0}</td>
+        <td>${hVal > 0 ? hVal : ''}</td>
+        <td>${cVal > 0 ? cVal : ''}</td>
+        <td>${cVal > 0 || hVal > 0 || sVal > 0 ? (sVal > 0 ? sVal : '') : (isPart && sVal > 0 ? sVal : '')}</td>
       `;
       tb.appendChild(tr);
     });
@@ -803,9 +808,9 @@
       tfoot.innerHTML = `
         <tr class="table-primary fs-6">
           <td colspan="2"><strong>연간 합계 (총 ${sumHours + sumCredit}시간)</strong></td>
-          <td><strong>${sumHours}</strong></td>
-          <td><strong>${sumCredit}</strong></td>
-          <td><strong>${sumStudies}</strong></td>
+          <td><strong>${sumHours > 0 ? sumHours : 0}</strong></td>
+          <td><strong>${sumCredit > 0 ? sumCredit : 0}</strong></td>
+          <td><strong>${sumStudies > 0 ? sumStudies : 0}</strong></td>
         </tr>
       `;
     }
