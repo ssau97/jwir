@@ -48,6 +48,7 @@
     </li>
   </ul>
 
+  <!-- [탭 1: 야외봉사 보고] -->
   <div id="tabReportSection">
     <div class="text-center mb-3">
       <h4 class="fw-bold" id="txtTitle">회중 야외봉사 보고</h4>
@@ -119,10 +120,14 @@
     </form>
   </div>
 
+  <!-- [탭 2: 파이오니아 개인 기록] -->
   <div id="tabPioneerSection" style="display:none;">
     <div id="pioneerAuthBox" class="card p-4 text-center">
       <h5 class="fw-bold mb-3" id="pioneerAuthTitle">정규 파이오니아 기록 열람</h5>
       <p class="text-muted small" id="pioneerAuthDesc">성명을 선택하고 비밀번호(PIN)를 입력하세요.</p>
+      
+      <!-- ⭐️ 검색어 입력창 추가 -->
+      <input type="text" id="pioneerNameSearch" class="form-control mb-2" placeholder="파이오니아 이름 검색 (자동 필터링)" oninput="filterPioneers()" autocomplete="off">
       <select id="pioneerSelect" class="form-select form-select-lg mb-3" onchange="onPioneerSelectChanged()">
         <option value="" id="optPioneerSelect">파이오니아 성명 선택</option>
       </select>
@@ -137,9 +142,17 @@
     </div>
 
     <div id="pioneerRecordDisplay" class="card p-3" style="display:none;">
-      <div class="d-flex justify-content-between align-items-center mb-3">
+      <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
         <h5 class="fw-bold text-primary mb-0" id="pioneerNameHeader">파이오니아 기록</h5>
-        <button class="btn btn-sm btn-outline-secondary" onclick="resetPioneerView()">뒤로가기</button>
+        <div class="d-flex gap-2">
+          <!-- ⭐️ 봉사연도별 선택 드롭다운 -->
+          <select id="pioneerYearFilter" class="form-select form-select-sm fw-bold border-primary" onchange="renderPioneerRecordTable()">
+            <option value="2026">2026 봉사연도</option>
+            <option value="2027" selected>2027 봉사연도</option>
+            <option value="2028">2028 봉사연도</option>
+          </select>
+          <button class="btn btn-sm btn-outline-secondary" onclick="resetPioneerView()">뒤로가기</button>
+        </div>
       </div>
 
       <div id="pioneerEditAlert" class="alert alert-info d-flex justify-content-between align-items-center mb-3" style="display:none;">
@@ -147,18 +160,20 @@
         <button class="btn btn-sm btn-warning fw-bold" onclick="openPioneerEditModal()">수정하기</button>
       </div>
 
-      <div class="table-responsive mb-3" style="max-height: 380px; overflow-y: auto;">
-        <table class="table table-bordered table-sm text-center align-middle">
+      <!-- ⭐️ 12개월 깔끔한 표 및 연간 합계 -->
+      <div class="table-responsive mb-3">
+        <table class="table table-bordered table-sm text-center align-middle mb-0">
           <thead class="table-light">
             <tr>
               <th id="thMonth">봉사월</th>
               <th id="thPart">참여</th>
               <th id="thHours">시간</th>
-              <th id="thStudies">연구</th>
               <th id="thCredit">추가</th>
+              <th id="thStudies">연구</th>
             </tr>
           </thead>
           <tbody id="pioneerRecordTable"></tbody>
+          <tfoot class="table-light fw-bold" id="pioneerRecordTotalFoot"></tfoot>
         </table>
       </div>
 
@@ -182,7 +197,7 @@
   function getCurrentServiceYear() {
     const now = new Date();
     const year = now.getFullYear();
-    const month = now.getMonth() + 1; // 1~12월
+    const month = now.getMonth() + 1;
     return month >= 9 ? year + 1 : year;
   }
 
@@ -190,6 +205,7 @@
   let publishers = [];
   let selectedPub = null;
   let selectedPioneer = null;
+  let pioneerAllRecords = null; // 파이오니아 전체 기록 캐시
   let activeReportMonth = "2026-09";
   let isPeriodOpen = true;
 
@@ -209,6 +225,7 @@
       badge: (yr) => `${yr} 봉사연도`,
       title: "회중 야외봉사 보고", sec1: "1. 본인 확인",
       searchPh: "이름 검색 (검색어 입력 시 자동 필터링)",
+      pioneerSearchPh: "파이오니아 이름 검색 (자동 필터링)",
       selectPub: "전도인을 선택하세요", selectPio: "파이오니아 성명 선택",
       tabReport: "야외봉사 보고", tabPioneer: "파이오니아 개인 기록",
       closedMsg: "⚠️ 지금은 아직 봉사보고를 제출할 기간이 아닙니다.<br><small class='text-muted'>(매월 28일 ~ 익월 15일 사이에 접수가 가능합니다)</small>",
@@ -218,7 +235,7 @@
       remarks: "비고 및 메모 (선택)", remarksPh: "특이사항을 입력하세요",
       submit: "보고서 제출하기", submitting: "제출 중...",
       pioneerTitle: "정규 파이오니아 기록 열람", pioneerDesc: "성명을 선택하고 비밀번호(PIN)를 입력하세요.",
-      pioneerLogin: "기록 조회하기", thMonth: "봉사월", thPart: "참여", thHours: "시간", thStudies: "연구", thCredit: "추가",
+      pioneerLogin: "기록 조회하기", thMonth: "봉사월", thPart: "참여", thHours: "시간", thCredit: "추가", thStudies: "연구",
       pinTitle: "비밀번호(PIN) 변경", pinCur: "현재 비밀번호", pinNew: "새 비밀번호 (4~6자리)", pinConfirm: "새 비밀번호 확인", pinSubmit: "비밀번호 변경 완료",
       alreadySubmitted: "이미 이번 달 보고가 완료되었습니다. 파이오니아 개인 기록 탭에서 확인 및 수정할 수 있습니다.",
       rememberPin: "이 기기에서 비밀번호(PIN) 기억하기"
@@ -227,6 +244,7 @@
       badge: (yr) => `${yr} служебный год`,
       title: "Отчет о служении", sec1: "1. Подтверждение личности",
       searchPh: "Поиск имени (фильтрация при вводе)",
+      pioneerSearchPh: "Поиск пионера (автофильтр)",
       selectPub: "Выберите возвещателя", selectPio: "Выберите пионера",
       tabReport: "Отчет о служении", tabPioneer: "Личные записи пионера",
       closedMsg: "⚠️ Сейчас не время для сдачи отчетов.<br><small class='text-muted'>(Прием отчетов открыт с 28 по 15 число следующего месяца)</small>",
@@ -236,7 +254,7 @@
       remarks: "Примечания (необязательно)", remarksPh: "Введите примечания",
       submit: "Отправить отчет", submitting: "Отправка...",
       pioneerTitle: "Просмотр записей общего пионера", pioneerDesc: "Выберите имя и введите PIN-код.",
-      pioneerLogin: "Посмотреть записи", thMonth: "Месяц", thPart: "Участие", thHours: "Часы", thStudies: "Изучения", thCredit: "Зачет",
+      pioneerLogin: "Посмотреть записи", thMonth: "Месяц", thPart: "Участие", thHours: "Часы", thCredit: "Зачет", thStudies: "Изучения",
       pinTitle: "Изменить PIN-код", pinCur: "Текущий PIN-код", pinNew: "Новый PIN-код (4~6 цифр)", pinConfirm: "Подтвердите новый PIN", pinSubmit: "Изменить PIN-код",
       alreadySubmitted: "Отчет за этот месяц уже сдан. Вы можете просмотреть и изменить его во вкладке 'Личные записи пионера'.",
       rememberPin: "Запомнить PIN-код на этом устройстве"
@@ -245,6 +263,7 @@
       badge: (yr) => `${yr} Service Year`,
       title: "Field Service Report", sec1: "1. Identity Verification",
       searchPh: "Search name (auto-filtered)",
+      pioneerSearchPh: "Search pioneer name (auto-filtered)",
       selectPub: "Select Publisher", selectPio: "Select Pioneer",
       tabReport: "Field Service Report", tabPioneer: "Pioneer Personal Records",
       closedMsg: "⚠️ It is not the reporting period yet.<br><small class='text-muted'>(Submission is open from the 28th to the 15th of next month)</small>",
@@ -254,7 +273,7 @@
       remarks: "Remarks / Notes (Optional)", remarksPh: "Enter any remarks",
       submit: "Submit Report", submitting: "Submitting...",
       pioneerTitle: "Regular Pioneer Record View", pioneerDesc: "Select your name and enter PIN code.",
-      pioneerLogin: "View Records", thMonth: "Month", thPart: "Part.", thHours: "Hours", thStudies: "Studies", thCredit: "Credit",
+      pioneerLogin: "View Records", thMonth: "Month", thPart: "Part.", thHours: "Hours", thCredit: "Credit", thStudies: "Studies",
       pinTitle: "Change PIN Code", pinCur: "Current PIN", pinNew: "New PIN (4~6 digits)", pinConfirm: "Confirm New PIN", pinSubmit: "Update PIN",
       alreadySubmitted: "This month's report has already been submitted. You can check and edit it in the 'Pioneer Personal Records' tab.",
       rememberPin: "Remember PIN on this device"
@@ -322,12 +341,13 @@
     document.getElementById('btn' + lang.charAt(0).toUpperCase() + lang.slice(1)).classList.add('btn-primary', 'text-white');
 
     const t = i18n[lang];
-    const serviceYear = getCurrentServiceYear(); // ⭐️ 현재 봉사연도 계산
-    document.getElementById("badgeServiceYear").innerText = t.badge(serviceYear); // ⭐️ 뱃지 연도 갱신
+    const serviceYear = getCurrentServiceYear();
+    document.getElementById("badgeServiceYear").innerText = t.badge(serviceYear);
 
     document.getElementById("txtTitle").innerText = t.title;
     document.getElementById("txtSec1").innerText = t.sec1;
     document.getElementById("nameSearch").placeholder = t.searchPh;
+    document.getElementById("pioneerNameSearch").placeholder = t.pioneerSearchPh;
     document.getElementById("tabBtnReport").innerText = t.tabReport;
     document.getElementById("tabBtnPioneer").innerText = t.tabPioneer;
     document.getElementById("closedAlert").innerHTML = t.closedMsg;
@@ -350,8 +370,8 @@
     document.getElementById("thMonth").innerText = t.thMonth;
     document.getElementById("thPart").innerText = t.thPart;
     document.getElementById("thHours").innerText = t.thHours;
-    document.getElementById("thStudies").innerText = t.thStudies;
     document.getElementById("thCredit").innerText = t.thCredit;
+    document.getElementById("thStudies").innerText = t.thStudies;
     document.getElementById("txtPinChangeTitle").innerText = t.pinTitle;
     document.getElementById("curPin").placeholder = t.pinCur;
     document.getElementById("newPin").placeholder = t.pinNew;
@@ -424,6 +444,34 @@
     if (filtered.length === 1) {
       select.value = filtered[0].id;
       onPublisherSelectChanged();
+    }
+  }
+
+  // ⭐️ --- 파이오니아 전용 이름 검색 (자동 필터링) ---
+  function filterPioneers() {
+    const q = document.getElementById("pioneerNameSearch").value.toLowerCase().trim();
+    const select = document.getElementById("pioneerSelect");
+    select.innerHTML = `<option value="">${i18n[currentLang].selectPio}</option>`;
+
+    const filtered = publishers.filter(p => 
+      p.role.includes("파이오니아") && (
+        (p.nameKo && p.nameKo.toLowerCase().includes(q)) ||
+        (p.nameRu && p.nameRu.toLowerCase().includes(q)) ||
+        (p.nameEn && p.nameEn.toLowerCase().includes(q))
+      )
+    );
+
+    filtered.forEach(p => {
+      const name = getDisplayName(p);
+      const opt = document.createElement("option");
+      opt.value = p.id;
+      opt.text = `${name} (${p.group})`;
+      select.appendChild(opt);
+    });
+
+    if (filtered.length === 1) {
+      select.value = filtered[0].id;
+      onPioneerSelectChanged();
     }
   }
 
@@ -572,19 +620,19 @@
       }
 
       selectedPioneer = res.publisher;
+      pioneerAllRecords = res.records; // 전체 3개년 기록 저장
+
       document.getElementById("pioneerAuthBox").style.display = "none";
       document.getElementById("pioneerRecordDisplay").style.display = "block";
       const nameShow = getDisplayName(selectedPioneer);
       document.getElementById("pioneerNameHeader").innerText = `${nameShow} (${i18n[currentLang].tabPioneer})`;
 
-      const tb = document.getElementById("pioneerRecordTable");
-      tb.innerHTML = "";
-      res.months.forEach(m => {
-        const r = res.records[m];
-        const tr = document.createElement("tr");
-        tr.innerHTML = `<td><strong>${m}</strong></td><td>${r.participated}</td><td>${r.hours}</td><td>${r.studies}</td><td>${r.credit}</td>`;
-        tb.appendChild(tr);
-      });
+      // 기본 연도 선택 및 12개월 테이블 렌더링
+      const curSY = getCurrentServiceYear();
+      const yrFilter = document.getElementById("pioneerYearFilter");
+      if (yrFilter) yrFilter.value = String(curSY);
+
+      renderPioneerRecordTable();
 
       if (res.canEditMonth) {
         document.getElementById("pioneerEditAlert").style.display = "flex";
@@ -597,10 +645,67 @@
     }
   }
 
+  // ⭐️ --- 선택된 봉사연도의 12개월 데이터 및 연간 합계 렌더링 ---
+  function renderPioneerRecordTable() {
+    if (!pioneerAllRecords) return;
+    const yr = Number(document.getElementById("pioneerYearFilter").value) || 2027;
+    const startYr = yr - 1;
+
+    // 해당 봉사연도의 12개월 목록 생성 (9월 ~ 익년 8월)
+    const months = [
+      `${startYr}-09`, `${startYr}-10`, `${startYr}-11`, `${startYr}-12`,
+      `${yr}-01`, `${yr}-02`, `${yr}-03`, `${yr}-04`,
+      `${yr}-05`, `${yr}-06`, `${yr}-07`, `${yr}-08`
+    ];
+
+    const tb = document.getElementById("pioneerRecordTable");
+    tb.innerHTML = "";
+
+    let sumHours = 0;
+    let sumCredit = 0;
+    let sumStudies = 0;
+
+    months.forEach(m => {
+      const r = pioneerAllRecords[m] || { participated: "-", hours: 0, credit: 0, studies: 0, remarks: "" };
+      const tr = document.createElement("tr");
+      
+      const isPart = r.participated === "예";
+      if (isPart) {
+        sumHours += Number(r.hours) || 0;
+        sumCredit += Number(r.credit) || 0;
+        sumStudies += Number(r.studies) || 0;
+      }
+
+      tr.innerHTML = `
+        <td><strong>${m}</strong></td>
+        <td>${r.participated}</td>
+        <td>${r.hours || 0}</td>
+        <td>${r.credit || 0}</td>
+        <td>${r.studies || 0}</td>
+      `;
+      tb.appendChild(tr);
+    });
+
+    // ⭐️ 하단 연간 합계 푸터
+    const tfoot = document.getElementById("pioneerRecordTotalFoot");
+    if (tfoot) {
+      tfoot.innerHTML = `
+        <tr class="table-primary">
+          <td colspan="2"><strong>연간 합계 (총 ${sumHours + sumCredit}시간)</strong></td>
+          <td><strong>${sumHours}</strong></td>
+          <td><strong>${sumCredit}</strong></td>
+          <td><strong>${sumStudies}</strong></td>
+        </tr>
+      `;
+    }
+  }
+
   function resetPioneerView() {
     document.getElementById("pioneerRecordDisplay").style.display = "none";
     document.getElementById("pioneerAuthBox").style.display = "block";
     document.getElementById("pioneerPin").value = "";
+    document.getElementById("pioneerNameSearch").value = "";
+    filterPioneers();
   }
 
   async function openPioneerEditModal() {
@@ -635,10 +740,6 @@
       document.getElementById("confirmPin").value = "";
     }
   }
-</script>
-</body>
-</html>
-
 </script>
 </body>
 </html>
