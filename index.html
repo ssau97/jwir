@@ -606,7 +606,7 @@
     }
   }
 
-  async function loadPioneerData() {
+    async function loadPioneerData() {
     const pioId = document.getElementById("pioneerSelect").value;
     if (!pioId) { alert(i18n[currentLang].selectPio); return; }
     const pin = document.getElementById("pioneerPin").value;
@@ -620,17 +620,25 @@
       }
 
       selectedPioneer = res.publisher;
-      pioneerAllRecords = res.records; // 전체 3개년 기록 저장
+      pioneerAllRecords = res.records;
 
       document.getElementById("pioneerAuthBox").style.display = "none";
       document.getElementById("pioneerRecordDisplay").style.display = "block";
       const nameShow = getDisplayName(selectedPioneer);
       document.getElementById("pioneerNameHeader").innerText = `${nameShow} (${i18n[currentLang].tabPioneer})`;
 
-      // 기본 연도 선택 및 12개월 테이블 렌더링
+      // ⭐️ [영구 자동화] 2026년부터 현재 봉사연도+1년까지 드롭다운 옵션 자동 생성
       const curSY = getCurrentServiceYear();
       const yrFilter = document.getElementById("pioneerYearFilter");
-      if (yrFilter) yrFilter.value = String(curSY);
+      yrFilter.innerHTML = "";
+
+      for (let sy = 2026; sy <= curSY + 1; sy++) {
+        const opt = document.createElement("option");
+        opt.value = sy;
+        opt.text = i18n[currentLang].pioneerYearOpt(sy);
+        if (sy === curSY) opt.selected = true;
+        yrFilter.appendChild(opt);
+      }
 
       renderPioneerRecordTable();
 
@@ -644,6 +652,7 @@
       alert(res ? res.message : "조회 실패");
     }
   }
+
 
   // ⭐️ --- 선택된 봉사연도의 12개월 데이터 및 연간 합계 렌더링 ---
   function renderPioneerRecordTable() {
