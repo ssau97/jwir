@@ -55,6 +55,17 @@
       <div class="fw-bold text-primary fs-5" id="txtCurrentMonth"></div>
     </div>
 
+    <!-- ⭐️ [테스트 모드 전용 툴바]: 원하는 봉사월을 자유롭게 선택하여 입력 가능 -->
+    <div id="testModeBox" class="card p-2 bg-warning-subtle border-warning shadow-sm mb-3" style="display:none;">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <span class="badge bg-warning text-dark fw-bold px-2 py-1">🧪 테스트 모드</span>
+        <div class="d-flex align-items-center gap-2">
+          <label for="testMonthSelect" class="form-label mb-0 fw-bold small text-dark">입력 봉사월:</label>
+          <select id="testMonthSelect" class="form-select form-select-sm fw-bold border-dark w-auto" onchange="onTestMonthChanged()"></select>
+        </div>
+      </div>
+    </div>
+
     <div id="closedAlert" class="alert alert-warning text-center fw-bold shadow-sm" style="display:none;"></div>
 
     <form id="serviceForm">
@@ -140,10 +151,10 @@
       <button class="btn btn-primary btn-lg w-100 fw-bold shadow" id="btnPioneerLogin" onclick="loadPioneerData()">기록 조회하기</button>
     </div>
 
-    <!-- ⭐️ 파이오니아 기록 조회 및 비밀번호 변경 카드 -->
+    <!-- 파이오니아 기록 조회 및 비밀번호 변경 카드 -->
     <div id="pioneerRecordDisplay" class="card p-3 p-md-4" style="display:none;">
       
-      <!-- 1. 상단 타이틀 & 뒤로가기 버튼 (시원한 상단 배치) -->
+      <!-- 1. 상단 타이틀 & 뒤로가기 버튼 -->
       <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
         <div>
           <span class="badge bg-primary-subtle text-primary fw-bold mb-1" id="badgePioneerRole">정규 파이오니아</span>
@@ -188,7 +199,7 @@
         </table>
       </div>
 
-      <!-- 4. ⭐️ 비밀번호(PIN) 변경 섹션 (대형 입력창 및 여유로운 배치) -->
+      <!-- 4. 비밀번호(PIN) 변경 섹션 -->
       <div class="card p-3 p-md-4 bg-light border-0 shadow-sm">
         <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
           <h5 class="fw-bold text-primary mb-0" id="txtPinChangeTitle">🔐 비밀번호(PIN) 변경</h5>
@@ -233,8 +244,9 @@
   let selectedPub = null;
   let selectedPioneer = null;
   let pioneerAllRecords = null;
-  let activeReportMonth = "2026-09";
+  let activeReportMonth = "2026-08";
   let isPeriodOpen = true;
+  let isTestMode = false;
 
   const creditOptions = [
     { ko: "베델", ru: "Вефиле", en: "Bethel" },
@@ -260,11 +272,11 @@
       studies: "사회한 개별 성서 연구 건수", aux: "이번 달 보조 파이오니아 활동함",
       hours: "봉사 시간 (필수)", credit: "추가 인정 시간",
       remarks: "비고 및 메모 (선택)", remarksPh: "특이사항을 입력하세요",
-      submit: "보고서 제출하기", submitting: "제출 중...",
+      submit: "보고서 제출하기", submitUpdate: "수정하여 저장하기", submitting: "제출 중...",
       pioneerTitle: "정규 파이오니아 기록 열람", pioneerDesc: "성명을 선택하고 비밀번호(PIN)를 입력하세요.",
       pioneerLogin: "기록 조회하기", thMonth: "봉사월", thPart: "참여", thHours: "시간", thCredit: "추가", thStudies: "연구",
       pinTitle: "🔐 비밀번호(PIN) 변경", pinCur: "현재 비밀번호", pinNew: "새 비밀번호 (4~6자리)", pinConfirm: "새 비밀번호 확인", pinSubmit: "비밀번호 변경 완료",
-      alreadySubmitted: "이미 이번 달 보고가 완료되었습니다. 파이오니아 개인 기록 탭에서 확인 및 수정할 수 있습니다.",
+      alreadySubmitted: "선택하신 월의 보고가 이미 입력되어 있습니다. 수정 후 다시 제출하실 수 있습니다.",
       rememberPin: "이 기기에서 비밀번호(PIN) 기억하기",
       pioneerYearOpt: (yr) => `${yr} 봉사연도`,
       btnBack: "← 뒤로가기", lblYearFilter: "📅 봉사연도", pioneerBadge: "정규 파이오니아"
@@ -281,11 +293,11 @@
       studies: "Количество отдельных изучений Библии", aux: "Служил подсобным пионером",
       hours: "Часы служения (обязательно)", credit: "Дополнительные зачетные часы",
       remarks: "Примечания (необязательно)", remarksPh: "Введите примечания",
-      submit: "Отправить отчет", submitting: "Отправка...",
+      submit: "Отправить отчет", submitUpdate: "Изменить и сохранить", submitting: "Отправка...",
       pioneerTitle: "Просмотр записей общего пионера", pioneerDesc: "Выберите имя и введите PIN-код.",
       pioneerLogin: "Посмотреть записи", thMonth: "Месяц", thPart: "Участие", thHours: "Часы", thCredit: "Зачет", thStudies: "Изучения",
       pinTitle: "🔐 Изменить PIN-код", pinCur: "Текущий PIN-код", pinNew: "Новый PIN-код (4~6 цифр)", pinConfirm: "Подтвердите новый PIN", pinSubmit: "Изменить PIN-код",
-      alreadySubmitted: "Отчет за этот месяц уже сдан. Вы можете просмотреть и изменить его во вкладке 'Личные записи пионера'.",
+      alreadySubmitted: "Отчет за этот месяц уже сдан. Вы можете отредактировать и сохранить его снова.",
       rememberPin: "Запомнить PIN-код на этом устройстве",
       pioneerYearOpt: (yr) => `${yr} служебный год`,
       btnBack: "← Назад", lblYearFilter: "📅 Служебный год", pioneerBadge: "Общий пионер"
@@ -302,11 +314,11 @@
       studies: "Number of different Bible studies conducted", aux: "Auxiliary Pioneer this month",
       hours: "Service Hours (Required)", credit: "Credit Hours",
       remarks: "Remarks / Notes (Optional)", remarksPh: "Enter any remarks",
-      submit: "Submit Report", submitting: "Submitting...",
+      submit: "Submit Report", submitUpdate: "Update & Save", submitting: "Submitting...",
       pioneerTitle: "Regular Pioneer Record View", pioneerDesc: "Select your name and enter PIN code.",
       pioneerLogin: "View Records", thMonth: "Month", thPart: "Part.", thHours: "Hours", thCredit: "Credit", thStudies: "Studies",
       pinTitle: "🔐 Change PIN Code", pinCur: "Current PIN", pinNew: "New PIN (4~6 digits)", pinConfirm: "Confirm New PIN", pinSubmit: "Update PIN",
-      alreadySubmitted: "This month's report has already been submitted. You can check and edit it in the 'Pioneer Personal Records' tab.",
+      alreadySubmitted: "The report for this month has already been submitted. You can edit and re-submit it.",
       rememberPin: "Remember PIN on this device",
       pioneerYearOpt: (yr) => `${yr} Service Year`,
       btnBack: "← Back", lblYearFilter: "📅 Service Year", pioneerBadge: "Regular Pioneer"
@@ -342,8 +354,26 @@
     if (timeInfo) {
       activeReportMonth = timeInfo.reportMonth;
       isPeriodOpen = timeInfo.isOpen;
-      updateMonthDisplay(timeInfo.year, timeInfo.month);
-      if (!isPeriodOpen) {
+      isTestMode = timeInfo.isTestMode || false;
+
+      // ⭐️ 테스트 모드일 때 상단에 봉사월 직접 선택 드롭다운 생성
+      if (isTestMode && Array.isArray(timeInfo.testMonths)) {
+        const testBox = document.getElementById("testModeBox");
+        const testSel = document.getElementById("testMonthSelect");
+        testSel.innerHTML = "";
+        timeInfo.testMonths.forEach(m => {
+          const opt = document.createElement("option");
+          opt.value = m;
+          opt.text = m;
+          if (m === activeReportMonth) opt.selected = true;
+          testSel.appendChild(opt);
+        });
+        testBox.style.display = "block";
+      }
+
+      updateMonthDisplayByStr(activeReportMonth);
+
+      if (!isPeriodOpen && !isTestMode) {
         document.getElementById("closedAlert").style.display = "block";
         document.getElementById("submitBtn").disabled = true;
       }
@@ -356,7 +386,21 @@
     }
   };
 
-  function updateMonthDisplay(year, month) {
+  // ⭐️ 테스트 봉사월 변경 시 호출
+  async function onTestMonthChanged() {
+    activeReportMonth = document.getElementById("testMonthSelect").value;
+    updateMonthDisplayByStr(activeReportMonth);
+    if (selectedPub) {
+      await checkAndFillExistingReport(selectedPub.id, activeReportMonth);
+    }
+  }
+
+  function updateMonthDisplayByStr(ymStr) {
+    if (!ymStr) return;
+    const parts = ymStr.split("-");
+    const year = Number(parts[0]);
+    const month = Number(parts[1]);
+
     let txt = `${year}년 ${month}월`;
     if (currentLang === 'en') {
       const mNames = ["Jan.", "Feb.", "Mar.", "Apr.", "May", "Jun.", "Jul.", "Aug.", "Sep.", "Oct.", "Nov.", "Dec."];
@@ -535,15 +579,37 @@
         toggleHours();
       }
 
-      if (isPeriodOpen) {
-        const res = await apiCall("checkExistingSubmission", { pubId: selectedPub.id, reportMonth: activeReportMonth });
-        if (res && res.exists) {
-          alert(i18n[currentLang].alreadySubmitted);
-          document.getElementById("submitBtn").disabled = true;
-        } else {
-          document.getElementById("submitBtn").disabled = false;
-        }
-      }
+      await checkAndFillExistingReport(selectedPub.id, activeReportMonth);
+    }
+  }
+
+  // ⭐️ 기존 보고 조회 및 폼 자동 채우기
+  async function checkAndFillExistingReport(pubId, month) {
+    const btn = document.getElementById("submitBtn");
+    const res = await apiCall("getSingleMonthReport", { pubId: pubId, month: month });
+
+    if (res && res.exists) {
+      const r = res.report;
+      const isPart = r.participated === "예";
+      document.getElementById("partYes").checked = isPart;
+      document.getElementById("partNo").checked = !isPart;
+      toggleParticipation(isPart);
+      document.getElementById("actualHours").value = r.hours || 0;
+      document.getElementById("bibleStudies").value = r.studies || 0;
+      document.getElementById("remarks").value = r.remarks || "";
+
+      btn.innerText = i18n[currentLang].submitUpdate || "수정하여 저장하기";
+      btn.disabled = false;
+    } else {
+      document.getElementById("partYes").checked = true;
+      document.getElementById("partNo").checked = false;
+      toggleParticipation(true);
+      document.getElementById("actualHours").value = "";
+      document.getElementById("bibleStudies").value = "0";
+      document.getElementById("remarks").value = "";
+
+      btn.innerText = i18n[currentLang].submit;
+      btn.disabled = !isPeriodOpen && !isTestMode;
     }
   }
 
@@ -634,7 +700,7 @@
     const res = await apiCall("submitReport", payload);
     alert(res.message);
     btn.disabled = false;
-    btn.innerText = i18n[currentLang].submit;
+    btn.innerText = i18n[currentLang].submitUpdate || "수정하여 저장하기";
   }
 
   // --- 파이오니아 개인 기록 & PIN 기억하기 ---
@@ -667,7 +733,7 @@
       const nameShow = getDisplayName(selectedPioneer);
       document.getElementById("pioneerNameHeader").innerText = `${nameShow}`;
 
-      // ⭐️ [영구 자동화] 2026년부터 현재 봉사연도+1년까지 드롭다운 옵션 자동 생성
+      // ⭐️ 2026년부터 현재 봉사연도+1년까지 드롭다운 옵션 자동 생성
       const curSY = getCurrentServiceYear();
       const yrFilter = document.getElementById("pioneerYearFilter");
       yrFilter.innerHTML = "";
@@ -693,7 +759,6 @@
     }
   }
 
-  // ⭐️ --- 선택된 봉사연도의 12개월 데이터 및 연간 합계 렌더링 ---
   function renderPioneerRecordTable() {
     if (!pioneerAllRecords) return;
     const yr = Number(document.getElementById("pioneerYearFilter").value) || getCurrentServiceYear();
@@ -758,17 +823,6 @@
     switchMainTab('report');
     document.getElementById("publisherSelect").value = selectedPioneer.id;
     await onPublisherSelectChanged();
-
-    const res = await apiCall("getSingleMonthReport", { pubId: selectedPioneer.id, month: activeReportMonth });
-    if (res && res.exists) {
-      document.getElementById("partYes").checked = res.report.participated === "예";
-      document.getElementById("partNo").checked = res.report.participated !== "예";
-      toggleParticipation(res.report.participated === "예");
-      document.getElementById("actualHours").value = res.report.hours;
-      document.getElementById("bibleStudies").value = res.report.studies;
-      document.getElementById("remarks").value = res.report.remarks;
-      document.getElementById("submitBtn").disabled = false;
-    }
   }
 
   async function submitChangePin() {
