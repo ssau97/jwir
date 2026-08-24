@@ -126,7 +126,6 @@
       <h5 class="fw-bold mb-3" id="pioneerAuthTitle">정규 파이오니아 기록 열람</h5>
       <p class="text-muted small" id="pioneerAuthDesc">성명을 선택하고 비밀번호(PIN)를 입력하세요.</p>
       
-      <!-- ⭐️ 검색어 입력창 추가 -->
       <input type="text" id="pioneerNameSearch" class="form-control mb-2" placeholder="파이오니아 이름 검색 (자동 필터링)" oninput="filterPioneers()" autocomplete="off">
       <select id="pioneerSelect" class="form-select form-select-lg mb-3" onchange="onPioneerSelectChanged()">
         <option value="" id="optPioneerSelect">파이오니아 성명 선택</option>
@@ -138,31 +137,43 @@
         <label class="form-check-label small text-muted" for="chkRememberPin" id="lblRememberPin">이 기기에서 비밀번호(PIN) 기억하기</label>
       </div>
 
-      <button class="btn btn-primary btn-lg w-100 fw-bold" id="btnPioneerLogin" onclick="loadPioneerData()">기록 조회하기</button>
+      <button class="btn btn-primary btn-lg w-100 fw-bold shadow" id="btnPioneerLogin" onclick="loadPioneerData()">기록 조회하기</button>
     </div>
 
-    <div id="pioneerRecordDisplay" class="card p-3" style="display:none;">
-      <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-        <h5 class="fw-bold text-primary mb-0" id="pioneerNameHeader">파이오니아 기록</h5>
-        <div class="d-flex gap-2">
-          <!-- ⭐️ 봉사연도별 선택 드롭다운 -->
-          <select id="pioneerYearFilter" class="form-select form-select-sm fw-bold border-primary" onchange="renderPioneerRecordTable()">
-            <option value="2026">2026 봉사연도</option>
-            <option value="2027" selected>2027 봉사연도</option>
-            <option value="2028">2028 봉사연도</option>
-          </select>
-          <button class="btn btn-sm btn-outline-secondary" onclick="resetPioneerView()">뒤로가기</button>
+    <!-- ⭐️ 파이오니아 기록 조회 및 비밀번호 변경 카드 -->
+    <div id="pioneerRecordDisplay" class="card p-3 p-md-4" style="display:none;">
+      
+      <!-- 1. 상단 타이틀 & 뒤로가기 버튼 (시원한 상단 배치) -->
+      <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+        <div>
+          <span class="badge bg-primary-subtle text-primary fw-bold mb-1" id="badgePioneerRole">정규 파이오니아</span>
+          <h4 class="fw-bold text-dark mb-0" id="pioneerNameHeader">파이오니아 기록</h4>
+        </div>
+        <button class="btn btn-outline-secondary fw-bold px-3 py-2 shadow-sm" id="btnPioneerBack" onclick="resetPioneerView()">
+          ← 뒤로가기
+        </button>
+      </div>
+
+      <!-- 2. 봉사연도 선택 대형 툴바 -->
+      <div class="card p-2 bg-light border-0 shadow-sm mb-3">
+        <div class="row g-2 align-items-center">
+          <div class="col-4 col-sm-3 text-center">
+            <label for="pioneerYearFilter" class="form-label fw-bold text-secondary mb-0" id="lblPioneerYear">📅 봉사연도</label>
+          </div>
+          <div class="col-8 col-sm-9">
+            <select id="pioneerYearFilter" class="form-select form-select-lg fw-bold text-primary border-primary shadow-sm" onchange="renderPioneerRecordTable()"></select>
+          </div>
         </div>
       </div>
 
-      <div id="pioneerEditAlert" class="alert alert-info d-flex justify-content-between align-items-center mb-3" style="display:none;">
-        <span id="pioneerEditText">이번 달 보고를 수정할 수 있습니다.</span>
-        <button class="btn btn-sm btn-warning fw-bold" onclick="openPioneerEditModal()">수정하기</button>
+      <div id="pioneerEditAlert" class="alert alert-warning d-flex justify-content-between align-items-center mb-3 shadow-sm" style="display:none;">
+        <span id="pioneerEditText" class="fw-bold">이번 달 보고를 수정할 수 있습니다.</span>
+        <button class="btn btn-sm btn-dark fw-bold px-3" onclick="openPioneerEditModal()">수정하기</button>
       </div>
 
-      <!-- ⭐️ 12개월 깔끔한 표 및 연간 합계 -->
-      <div class="table-responsive mb-3">
-        <table class="table table-bordered table-sm text-center align-middle mb-0">
+      <!-- 3. 12개월 표 및 연간 합계 -->
+      <div class="table-responsive mb-4 rounded border shadow-sm">
+        <table class="table table-bordered table-hover text-center align-middle mb-0" style="font-size: 0.95rem;">
           <thead class="table-light">
             <tr>
               <th id="thMonth">봉사월</th>
@@ -177,13 +188,29 @@
         </table>
       </div>
 
-      <div class="card p-3 bg-light">
-        <h6 class="fw-bold mb-2" id="txtPinChangeTitle">비밀번호(PIN) 변경</h6>
-        <input type="password" id="curPin" class="form-control form-control-sm mb-2" placeholder="현재 비밀번호">
-        <input type="password" id="newPin" class="form-control form-control-sm mb-2" placeholder="새 비밀번호 (4~6자리)">
-        <input type="password" id="confirmPin" class="form-control form-control-sm mb-2" placeholder="새 비밀번호 확인">
-        <button class="btn btn-sm btn-success fw-bold w-100" id="btnChangePin" onclick="submitChangePin()">비밀번호 변경 완료</button>
+      <!-- 4. ⭐️ 비밀번호(PIN) 변경 섹션 (대형 입력창 및 여유로운 배치) -->
+      <div class="card p-3 p-md-4 bg-light border-0 shadow-sm">
+        <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+          <h5 class="fw-bold text-primary mb-0" id="txtPinChangeTitle">🔐 비밀번호(PIN) 변경</h5>
+          <span class="badge bg-secondary">4~6자리</span>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-bold text-secondary mb-1" id="lblPinCur">현재 비밀번호</label>
+          <input type="password" id="curPin" class="form-control form-control-lg text-center" maxlength="6" placeholder="현재 비밀번호">
+        </div>
+        <div class="mb-3">
+          <label class="form-label small fw-bold text-secondary mb-1" id="lblPinNew">새 비밀번호 (4~6자리)</label>
+          <input type="password" id="newPin" class="form-control form-control-lg text-center" maxlength="6" placeholder="새 비밀번호 입력">
+        </div>
+        <div class="mb-3">
+          <label class="form-label small fw-bold text-secondary mb-1" id="lblPinConfirm">새 비밀번호 확인</label>
+          <input type="password" id="confirmPin" class="form-control form-control-lg text-center" maxlength="6" placeholder="새 비밀번호 재입력">
+        </div>
+
+        <button class="btn btn-success btn-lg fw-bold w-100 shadow-sm" id="btnChangePin" onclick="submitChangePin()">비밀번호 변경 완료</button>
       </div>
+
     </div>
   </div>
 
@@ -205,7 +232,7 @@
   let publishers = [];
   let selectedPub = null;
   let selectedPioneer = null;
-  let pioneerAllRecords = null; // 파이오니아 전체 기록 캐시
+  let pioneerAllRecords = null;
   let activeReportMonth = "2026-09";
   let isPeriodOpen = true;
 
@@ -236,9 +263,11 @@
       submit: "보고서 제출하기", submitting: "제출 중...",
       pioneerTitle: "정규 파이오니아 기록 열람", pioneerDesc: "성명을 선택하고 비밀번호(PIN)를 입력하세요.",
       pioneerLogin: "기록 조회하기", thMonth: "봉사월", thPart: "참여", thHours: "시간", thCredit: "추가", thStudies: "연구",
-      pinTitle: "비밀번호(PIN) 변경", pinCur: "현재 비밀번호", pinNew: "새 비밀번호 (4~6자리)", pinConfirm: "새 비밀번호 확인", pinSubmit: "비밀번호 변경 완료",
+      pinTitle: "🔐 비밀번호(PIN) 변경", pinCur: "현재 비밀번호", pinNew: "새 비밀번호 (4~6자리)", pinConfirm: "새 비밀번호 확인", pinSubmit: "비밀번호 변경 완료",
       alreadySubmitted: "이미 이번 달 보고가 완료되었습니다. 파이오니아 개인 기록 탭에서 확인 및 수정할 수 있습니다.",
-      rememberPin: "이 기기에서 비밀번호(PIN) 기억하기"
+      rememberPin: "이 기기에서 비밀번호(PIN) 기억하기",
+      pioneerYearOpt: (yr) => `${yr} 봉사연도`,
+      btnBack: "← 뒤로가기", lblYearFilter: "📅 봉사연도", pioneerBadge: "정규 파이오니아"
     },
     ru: {
       badge: (yr) => `${yr} служебный год`,
@@ -255,9 +284,11 @@
       submit: "Отправить отчет", submitting: "Отправка...",
       pioneerTitle: "Просмотр записей общего пионера", pioneerDesc: "Выберите имя и введите PIN-код.",
       pioneerLogin: "Посмотреть записи", thMonth: "Месяц", thPart: "Участие", thHours: "Часы", thCredit: "Зачет", thStudies: "Изучения",
-      pinTitle: "Изменить PIN-код", pinCur: "Текущий PIN-код", pinNew: "Новый PIN-код (4~6 цифр)", pinConfirm: "Подтвердите новый PIN", pinSubmit: "Изменить PIN-код",
+      pinTitle: "🔐 Изменить PIN-код", pinCur: "Текущий PIN-код", pinNew: "Новый PIN-код (4~6 цифр)", pinConfirm: "Подтвердите новый PIN", pinSubmit: "Изменить PIN-код",
       alreadySubmitted: "Отчет за этот месяц уже сдан. Вы можете просмотреть и изменить его во вкладке 'Личные записи пионера'.",
-      rememberPin: "Запомнить PIN-код на этом устройстве"
+      rememberPin: "Запомнить PIN-код на этом устройстве",
+      pioneerYearOpt: (yr) => `${yr} служебный год`,
+      btnBack: "← Назад", lblYearFilter: "📅 Служебный год", pioneerBadge: "Общий пионер"
     },
     en: {
       badge: (yr) => `${yr} Service Year`,
@@ -274,9 +305,11 @@
       submit: "Submit Report", submitting: "Submitting...",
       pioneerTitle: "Regular Pioneer Record View", pioneerDesc: "Select your name and enter PIN code.",
       pioneerLogin: "View Records", thMonth: "Month", thPart: "Part.", thHours: "Hours", thCredit: "Credit", thStudies: "Studies",
-      pinTitle: "Change PIN Code", pinCur: "Current PIN", pinNew: "New PIN (4~6 digits)", pinConfirm: "Confirm New PIN", pinSubmit: "Update PIN",
+      pinTitle: "🔐 Change PIN Code", pinCur: "Current PIN", pinNew: "New PIN (4~6 digits)", pinConfirm: "Confirm New PIN", pinSubmit: "Update PIN",
       alreadySubmitted: "This month's report has already been submitted. You can check and edit it in the 'Pioneer Personal Records' tab.",
-      rememberPin: "Remember PIN on this device"
+      rememberPin: "Remember PIN on this device",
+      pioneerYearOpt: (yr) => `${yr} Service Year`,
+      btnBack: "← Back", lblYearFilter: "📅 Service Year", pioneerBadge: "Regular Pioneer"
     }
   };
 
@@ -372,7 +405,15 @@
     document.getElementById("thHours").innerText = t.thHours;
     document.getElementById("thCredit").innerText = t.thCredit;
     document.getElementById("thStudies").innerText = t.thStudies;
+    
+    document.getElementById("btnPioneerBack").innerText = t.btnBack;
+    document.getElementById("lblPioneerYear").innerText = t.lblYearFilter;
+    document.getElementById("badgePioneerRole").innerText = t.pioneerBadge;
+
     document.getElementById("txtPinChangeTitle").innerText = t.pinTitle;
+    document.getElementById("lblPinCur").innerText = t.pinCur;
+    document.getElementById("lblPinNew").innerText = t.pinNew;
+    document.getElementById("lblPinConfirm").innerText = t.pinConfirm;
     document.getElementById("curPin").placeholder = t.pinCur;
     document.getElementById("newPin").placeholder = t.pinNew;
     document.getElementById("confirmPin").placeholder = t.pinConfirm;
@@ -447,7 +488,6 @@
     }
   }
 
-  // ⭐️ --- 파이오니아 전용 이름 검색 (자동 필터링) ---
   function filterPioneers() {
     const q = document.getElementById("pioneerNameSearch").value.toLowerCase().trim();
     const select = document.getElementById("pioneerSelect");
@@ -606,7 +646,7 @@
     }
   }
 
-    async function loadPioneerData() {
+  async function loadPioneerData() {
     const pioId = document.getElementById("pioneerSelect").value;
     if (!pioId) { alert(i18n[currentLang].selectPio); return; }
     const pin = document.getElementById("pioneerPin").value;
@@ -625,7 +665,7 @@
       document.getElementById("pioneerAuthBox").style.display = "none";
       document.getElementById("pioneerRecordDisplay").style.display = "block";
       const nameShow = getDisplayName(selectedPioneer);
-      document.getElementById("pioneerNameHeader").innerText = `${nameShow} (${i18n[currentLang].tabPioneer})`;
+      document.getElementById("pioneerNameHeader").innerText = `${nameShow}`;
 
       // ⭐️ [영구 자동화] 2026년부터 현재 봉사연도+1년까지 드롭다운 옵션 자동 생성
       const curSY = getCurrentServiceYear();
@@ -635,7 +675,7 @@
       for (let sy = 2026; sy <= curSY + 1; sy++) {
         const opt = document.createElement("option");
         opt.value = sy;
-        opt.text = i18n[currentLang].pioneerYearOpt(sy);
+        opt.text = i18n[currentLang].pioneerYearOpt ? i18n[currentLang].pioneerYearOpt(sy) : `${sy} 봉사연도`;
         if (sy === curSY) opt.selected = true;
         yrFilter.appendChild(opt);
       }
@@ -653,14 +693,12 @@
     }
   }
 
-
   // ⭐️ --- 선택된 봉사연도의 12개월 데이터 및 연간 합계 렌더링 ---
   function renderPioneerRecordTable() {
     if (!pioneerAllRecords) return;
-    const yr = Number(document.getElementById("pioneerYearFilter").value) || 2027;
+    const yr = Number(document.getElementById("pioneerYearFilter").value) || getCurrentServiceYear();
     const startYr = yr - 1;
 
-    // 해당 봉사연도의 12개월 목록 생성 (9월 ~ 익년 8월)
     const months = [
       `${startYr}-09`, `${startYr}-10`, `${startYr}-11`, `${startYr}-12`,
       `${yr}-01`, `${yr}-02`, `${yr}-03`, `${yr}-04`,
@@ -695,11 +733,10 @@
       tb.appendChild(tr);
     });
 
-    // ⭐️ 하단 연간 합계 푸터
     const tfoot = document.getElementById("pioneerRecordTotalFoot");
     if (tfoot) {
       tfoot.innerHTML = `
-        <tr class="table-primary">
+        <tr class="table-primary fs-6">
           <td colspan="2"><strong>연간 합계 (총 ${sumHours + sumCredit}시간)</strong></td>
           <td><strong>${sumHours}</strong></td>
           <td><strong>${sumCredit}</strong></td>
@@ -735,12 +772,22 @@
   }
 
   async function submitChangePin() {
-    const cur = document.getElementById("curPin").value;
-    const n1 = document.getElementById("newPin").value;
-    const n2 = document.getElementById("confirmPin").value;
+    const cur = document.getElementById("curPin").value.trim();
+    const n1 = document.getElementById("newPin").value.trim();
+    const n2 = document.getElementById("confirmPin").value.trim();
+
+    if (!cur) { alert("현재 비밀번호를 입력하세요."); return; }
+    if (!n1 || n1.length < 4 || n1.length > 6) { alert("새 비밀번호는 4자리에서 6자리 사이여야 합니다."); return; }
     if (n1 !== n2) { alert("새 비밀번호 확인이 일치하지 않습니다."); return; }
 
+    const btn = document.getElementById("btnChangePin");
+    btn.disabled = true;
+    btn.innerText = "변경 처리 중...";
+
     const res = await apiCall("changePublisherPin", { pubId: selectedPioneer.id, currentPin: cur, newPin: n1 });
+    btn.disabled = false;
+    btn.innerText = i18n[currentLang].pinSubmit;
+
     alert(res.message);
     if (res.success) {
       localStorage.setItem("saved_pin_" + selectedPioneer.id, n1);
