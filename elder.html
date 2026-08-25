@@ -67,10 +67,70 @@
       border-bottom: none;
     }
 
-    /* 파이오니아 평가 뱃지 */
-    .eval-badge-green { background-color: #d1e7dd; color: #0f5132; border: 1px solid #badbcc; font-weight: bold; }
-    .eval-badge-yellow { background-color: #fff3cd; color: #664d03; border: 1px solid #ffecb5; font-weight: bold; }
-    .eval-badge-red { background-color: #f8d7da; color: #842029; border: 1px solid #f5c2c7; font-weight: bold; }
+    /* 파이오니아 시간 평가 */
+.eval-table {
+  table-layout: fixed;
+  min-width: 690px;
+}
+
+.eval-table th {
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.eval-table td {
+  vertical-align: top;
+  padding: 8px;
+}
+
+.eval-person {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 4px;
+  border-bottom: 1px solid #edf2f7;
+  white-space: nowrap;
+}
+
+.eval-person:last-child {
+  border-bottom: none;
+}
+
+.eval-dot {
+  width: 11px;
+  height: 11px;
+  min-width: 11px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.eval-dot-green {
+  background-color: #198754;
+}
+
+.eval-dot-yellow {
+  background-color: #ffc107;
+}
+
+.eval-dot-red {
+  background-color: #dc3545;
+}
+
+.eval-name {
+  font-weight: 700;
+  flex: 1;
+}
+
+.eval-hours {
+  color: #495057;
+  font-size: 0.82rem;
+}
+
+.eval-shortage {
+  color: #dc3545;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
   </style>
 </head>
 <body class="py-3">
@@ -200,112 +260,381 @@
       </div>
     </div>
 
-    <!-- [탭 3: 봉사 보고 현황 & 9대 지표 & 미보고자 독려 & 파이오니아 평가] -->
-    <div id="tabService" class="card p-3 mb-4" style="display:none;">
-      
-      <!-- 1. 미보고자 집단별 알림 및 원클릭 독려 멘트 복사 박스 (최상단) -->
-      <div id="unsubmittedAlertBox" class="card p-3 bg-danger-subtle border-danger shadow-sm mb-3" style="display:none;">
-        <div class="d-flex justify-content-between align-items-center mb-2">
-          <h6 class="fw-bold text-danger mb-0">📢 미제출 전도인 현황 (집단 감독자 연락용)</h6>
-          <span class="badge bg-danger">매월 10일 독려</span>
-        </div>
-        
-        <div class="row g-2 mb-3" id="unsubmittedGroupsContainer"></div>
+    <!-- [탭 3: 봉사 보고 현황] -->
+<div id="tabService" class="card p-3 mb-4" style="display:none;">
 
-        <div class="card p-2 bg-white border-0 shadow-sm">
-          <div class="d-flex justify-content-between align-items-center mb-1">
-            <small class="fw-bold text-primary">🇰🇷 한국어 독려 메시지:</small>
-            <button class="btn btn-sm btn-outline-primary py-0 px-2 fw-bold" onclick="copyPrompt('ko')">📋 복사</button>
-          </div>
-          <p class="small text-dark mb-2 bg-light p-2 rounded" id="promptKo">지난 달 수고하신 야외 봉사 보고를 오늘 10일까지 제출해 주시기 바랍니다.</p>
+  <!-- =====================================================
+       1. 월별 봉사 보고 현황
+       ===================================================== -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h5 class="fw-bold mb-0">월별 봉사 보고 현황</h5>
 
-          <div class="d-flex justify-content-between align-items-center mb-1">
-            <small class="fw-bold text-success">🇷🇺 러시아어 독려 메시지 (Русский):</small>
-            <button class="btn btn-sm btn-outline-success py-0 px-2 fw-bold" onclick="copyPrompt('ru')">📋 복사</button>
-          </div>
-          <p class="small text-dark mb-0 bg-light p-2 rounded" id="promptRu">Пожалуйста, сдайте отчет о проповедническом служении за прошлый месяц до 10-го числа.</p>
-        </div>
+    <select
+      id="serviceMonthFilter"
+      class="form-select w-auto fw-bold"
+      onchange="loadServiceReports()"
+    ></select>
+  </div>
+
+
+  <!-- 월간 총괄 지표 -->
+  <div class="card p-3 bg-light mb-3">
+
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <h6 class="fw-bold mb-0">📊 회중 월간 총괄 지표</h6>
+
+      <span
+        id="collectionStatusBadge"
+        class="badge bg-warning text-dark"
+      >
+        수집중
+      </span>
+    </div>
+
+
+    <div class="row g-2 text-center" style="font-size:0.85rem;">
+
+      <div class="col-4">
+        총 활동 전도인:
+        <strong id="m_totalActive">0</strong>명
       </div>
 
-      <!-- 2. 파이오니아 시간 평가 위젯 (2월 300h / 8·9월 560h 미달자 목록) -->
-      <div id="pioneerEvalCard" class="card p-3 bg-warning-subtle border-warning shadow-sm mb-3" style="display:none;">
-        <div class="d-flex justify-content-between align-items-center mb-2">
-          <h6 class="fw-bold text-dark mb-0" id="pioneerEvalTitle">⏱️ 파이오니아 시간 평가 분석</h6>
-          <span class="badge bg-dark" id="pioneerEvalBadge">평가</span>
-        </div>
-        <div id="pioneerEvalContent" class="small"></div>
+      <div class="col-4">
+        전도인 보고:
+        <strong id="m_pubReport">0</strong>명
       </div>
 
-      <!-- 3. 월별 총괄 지표 및 필터 -->
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <h5 class="fw-bold mb-0">월별 봉사 보고 현황</h5>
-        <select id="serviceMonthFilter" class="form-select w-auto fw-bold" onchange="loadServiceReports()"></select>
+      <div class="col-4">
+        전도인 연구:
+        <strong id="m_pubStudies">0</strong>건
       </div>
 
-      <div class="card p-3 bg-light mb-3">
-        <div class="d-flex justify-content-between align-items-center mb-2">
-          <h6 class="fw-bold mb-0">📊 회중 월간 총괄 지표</h6>
-          <span id="collectionStatusBadge" class="badge bg-warning text-dark">수집중</span>
-        </div>
-        <div class="row g-2 text-center" style="font-size: 0.85rem;">
-          <div class="col-4">총 활동 전도인: <strong id="m_totalActive">0</strong>명</div>
-          <div class="col-4">전도인 보고: <strong id="m_pubReport">0</strong>명</div>
-          <div class="col-4">전도인 연구: <strong id="m_pubStudies">0</strong>건</div>
-          <div class="col-4">보조P 보고: <strong id="m_auxReport">0</strong>명</div>
-          <div class="col-4">보조P 시간: <strong id="m_auxHours">0</strong>시간</div>
-          <div class="col-4">보조P 연구: <strong id="m_auxStudies">0</strong>건</div>
-          <div class="col-4">정규P 보고: <strong id="m_regReport">0</strong>명</div>
-          <div class="col-4">정규P 시간: <strong id="m_regHours">0</strong>시간</div>
-          <div class="col-4">정규P 연구: <strong id="m_regStudies">0</strong>건</div>
-        </div>
+
+      <div class="col-4">
+        보조P 보고:
+        <strong id="m_auxReport">0</strong>명
       </div>
 
-      <!-- 4. 보고 제출 전도인 상세 테이블 -->
-      <div class="table-responsive mb-4" style="max-height: 420px; overflow-y: auto;">
-        <table class="table table-hover table-sm align-middle text-center">
-          <thead class="table-light">
-            <tr>
-              <th>성명</th><th>신분</th><th>참여</th><th>시간</th><th>추가</th><th>연구</th><th>비고</th>
-              <th>S-21</th>
-            </tr>
-          </thead>
-          <tbody id="serviceReportBody"></tbody>
-        </table>
+      <div class="col-4">
+        보조P 시간:
+        <strong id="m_auxHours">0</strong>시간
       </div>
 
-      <!-- 5. S-21 다운로드 매니저 (하단으로 배치) -->
-      <div class="card p-3 bg-white border border-danger-subtle shadow-sm mt-3">
-        <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
-          <h6 class="fw-bold text-danger mb-0">📦 S-21 전도인 카드 다운로드 매니저</h6>
-          <span class="badge bg-danger text-white">순회방문 대비 / 한국어 카드</span>
-        </div>
-        <div class="row g-2 align-items-center">
-          <div class="col-md-4">
-            <label class="form-label small fw-bold text-secondary mb-1">대상 연도</label>
-            <select id="s21ExportYear" class="form-select form-select-sm fw-bold border-danger">
-              <option value="CURRENT_AND_PREV" selected>⭐️ 현재+전년도 (2개년 일괄)</option>
-              <option value="2027">2027 봉사연도 (현재)</option>
-              <option value="2026">2026 봉사연도 (전년도)</option>
-              <option value="2028">2028 봉사연도</option>
-            </select>
-          </div>
-          <div class="col-md-4">
-            <label class="form-label small fw-bold text-secondary mb-1">대상 신분</label>
-            <select id="s21ExportRole" class="form-select form-select-sm fw-bold border-secondary">
-              <option value="ALL" selected>전체 (전도인 + 파이오니아)</option>
-              <option value="PIONEER_ONLY">정규 파이오니아만</option>
-              <option value="PUBLISHER_ONLY">일반 전도인만</option>
-            </select>
-          </div>
-          <div class="col-md-4 d-flex align-items-end">
-            <button class="btn btn-danger btn-sm w-100 fw-bold py-2 shadow-sm" id="btnExportS21Batch" onclick="downloadS21Batch()">
-              📥 조건별 일괄 다운로드 (ZIP)
-            </button>
-          </div>
-        </div>
+      <div class="col-4">
+        보조P 연구:
+        <strong id="m_auxStudies">0</strong>건
+      </div>
+
+
+      <div class="col-4">
+        정규P 보고:
+        <strong id="m_regReport">0</strong>명
+      </div>
+
+      <div class="col-4">
+        정규P 시간:
+        <strong id="m_regHours">0</strong>시간
+      </div>
+
+      <div class="col-4">
+        정규P 연구:
+        <strong id="m_regStudies">0</strong>건
       </div>
 
     </div>
+
+  </div>
+
+
+  <!-- 제출자 상세 -->
+  <div
+    class="table-responsive mb-4"
+    style="max-height:420px; overflow-y:auto;"
+  >
+
+    <table class="table table-hover table-sm align-middle text-center">
+
+      <thead class="table-light">
+        <tr>
+          <th>성명</th>
+          <th>신분</th>
+          <th>참여</th>
+          <th>시간</th>
+          <th>추가</th>
+          <th>연구</th>
+          <th>비고</th>
+          <th>S-21</th>
+        </tr>
+      </thead>
+
+      <tbody id="serviceReportBody"></tbody>
+
+    </table>
+
+  </div>
+
+
+  <!-- =====================================================
+       2. 미제출 전도인
+       매월 10~15일에만 표시
+       ===================================================== -->
+  <div
+    id="unsubmittedAlertBox"
+    class="card p-3 bg-danger-subtle border-danger shadow-sm mb-3"
+    style="display:none;"
+  >
+
+    <div class="d-flex justify-content-between align-items-center mb-2">
+
+      <h6 class="fw-bold text-danger mb-0">
+        📢 미제출 전도인 현황
+      </h6>
+
+      <span class="badge bg-danger">
+        매월 10~15일
+      </span>
+
+    </div>
+
+
+    <div
+      class="row g-2 mb-3"
+      id="unsubmittedGroupsContainer"
+    ></div>
+
+
+    <div class="card p-2 bg-white border-0 shadow-sm">
+
+      <div class="d-flex justify-content-between align-items-center mb-1">
+
+        <small class="fw-bold text-primary">
+          🇰🇷 한국어 독려 메시지
+        </small>
+
+        <button
+          class="btn btn-sm btn-outline-primary py-0 px-2 fw-bold"
+          onclick="copyPrompt('ko')"
+        >
+          📋 복사
+        </button>
+
+      </div>
+
+      <p
+        class="small text-dark mb-2 bg-light p-2 rounded"
+        id="promptKo"
+      >
+        지난 달 야외 봉사 보고가 아직 확인되지 않아 알려드립니다. 가능하실 때 제출해 주시면 감사하겠습니다.
+      </p>
+
+
+      <div class="d-flex justify-content-between align-items-center mb-1">
+
+        <small class="fw-bold text-success">
+          🇷🇺 Русский
+        </small>
+
+        <button
+          class="btn btn-sm btn-outline-success py-0 px-2 fw-bold"
+          onclick="copyPrompt('ru')"
+        >
+          📋 복사
+        </button>
+
+      </div>
+
+      <p
+        class="small text-dark mb-0 bg-light p-2 rounded"
+        id="promptRu"
+      >
+        Ваш отчёт о проповедническом служении за прошлый месяц пока не получен. Пожалуйста, отправьте его, когда будет возможность. Спасибо!
+      </p>
+
+    </div>
+
+  </div>
+
+
+  <!-- =====================================================
+       3. 파이오니아 시간 평가
+       2/20~말일 또는 9/20~30만 표시
+       ===================================================== -->
+  <div
+    id="pioneerEvalCard"
+    class="card p-3 bg-warning-subtle border-warning shadow-sm mb-3"
+    style="display:none;"
+  >
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+
+      <h6
+        class="fw-bold text-dark mb-0"
+        id="pioneerEvalTitle"
+      >
+        ⏱️ 파이오니아 시간 평가
+      </h6>
+
+      <span
+        class="badge bg-dark"
+        id="pioneerEvalBadge"
+      >
+        평가
+      </span>
+
+    </div>
+
+    <div
+      id="pioneerEvalContent"
+      class="table-responsive"
+    ></div>
+
+  </div>
+
+
+  <!-- =====================================================
+       4. 전도인 개별 S-21
+       ===================================================== -->
+  <div class="card p-3 bg-primary-subtle border border-primary-subtle shadow-sm mb-3">
+
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+
+      <h6 class="fw-bold text-primary mb-0">
+        📄 전도인 개별 S-21
+      </h6>
+
+      <span class="badge bg-primary">
+        한국어 카드
+      </span>
+
+    </div>
+
+
+    <div class="row g-2">
+
+      <div class="col-md-5">
+
+        <label class="form-label small fw-bold text-secondary mb-1">
+          전도인
+        </label>
+
+        <select
+          id="s21SinglePublisher"
+          class="form-select form-select-sm fw-bold"
+        >
+          <option value="">전도인을 선택하세요</option>
+        </select>
+
+      </div>
+
+
+      <div class="col-md-3">
+
+        <label class="form-label small fw-bold text-secondary mb-1">
+          봉사연도
+        </label>
+
+        <select
+          id="s21SingleYear"
+          class="form-select form-select-sm fw-bold"
+        ></select>
+
+      </div>
+
+
+      <div class="col-md-4 d-flex align-items-end">
+
+        <button
+          class="btn btn-primary btn-sm w-100 fw-bold py-2 shadow-sm"
+          id="btnSingleS21"
+          onclick="downloadSelectedPublisherS21()"
+        >
+          📥 개별 S-21 다운로드
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- =====================================================
+       5. S-21 일괄 다운로드
+       ===================================================== -->
+  <div class="card p-3 bg-white border border-danger-subtle shadow-sm">
+
+    <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+
+      <h6 class="fw-bold text-danger mb-0">
+        📦 S-21 전도인 카드 다운로드 매니저
+      </h6>
+
+      <span class="badge bg-danger text-white">
+        순회방문 대비 / 한국어 카드
+      </span>
+
+    </div>
+
+
+    <div class="row g-2 align-items-center">
+
+      <div class="col-md-4">
+
+        <label class="form-label small fw-bold text-secondary mb-1">
+          대상 연도
+        </label>
+
+        <select
+          id="s21ExportYear"
+          class="form-select form-select-sm fw-bold border-danger"
+        ></select>
+
+      </div>
+
+
+      <div class="col-md-4">
+
+        <label class="form-label small fw-bold text-secondary mb-1">
+          대상 신분
+        </label>
+
+        <select
+          id="s21ExportRole"
+          class="form-select form-select-sm fw-bold border-secondary"
+        >
+          <option value="ALL" selected>
+            전체 (전도인 + 파이오니아)
+          </option>
+
+          <option value="PIONEER_ONLY">
+            정규 파이오니아만
+          </option>
+
+          <option value="PUBLISHER_ONLY">
+            일반 전도인만
+          </option>
+        </select>
+
+      </div>
+
+
+      <div class="col-md-4 d-flex align-items-end">
+
+        <button
+          class="btn btn-danger btn-sm w-100 fw-bold py-2 shadow-sm"
+          id="btnExportS21Batch"
+          onclick="downloadS21Batch()"
+        >
+          📥 조건별 일괄 다운로드 (ZIP)
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
 
     <!-- [탭 4: 비상연락망 (틀 고정 횡스크롤 & 가족 묶음, 기타정보 제외)] -->
     <div id="tabEmergency" class="card p-3 mb-4" style="display:none;">
@@ -521,10 +850,12 @@
 
     if (tab === 'meeting') document.getElementById("btnTabMeeting").classList.add('active');
     if (tab === 'attendanceStatus') { document.getElementById("btnTabAttendanceStatus").classList.add('active'); loadAttendanceCalendar(); }
-    if (tab === 'service') { 
-      document.getElementById("btnTabService").classList.add('active'); 
-      populateServiceMonthDropdown(); 
-      loadServiceReports(); 
+    if (tab === 'service') {
+      document.getElementById("btnTabService").classList.add('active');
+
+      populateServiceMonthDropdown();
+      populateS21Controls();
+      loadServiceReports();
     }
     if (tab === 'emergency') { document.getElementById("btnTabEmergency").classList.add('active'); loadEmergencyData(); }
     if (tab === 'grouptable') { document.getElementById("btnTabGroupTable").classList.add('active'); loadGroupTableView(); }
@@ -848,118 +1179,628 @@
     sel.dataset.populated = "true";
   }
 
+async function populateS21Controls() {
+  const pubSelect =
+    document.getElementById("s21SinglePublisher");
+
+  const singleYearSelect =
+    document.getElementById("s21SingleYear");
+
+  const batchYearSelect =
+    document.getElementById("s21ExportYear");
+
+
+  /*
+   * 전도인 목록
+   */
+  if (pubSelect.dataset.populated !== "true") {
+
+    const list =
+      await apiCall("getActivePublishers");
+
+
+    pubSelect.innerHTML =
+      `<option value="">전도인을 선택하세요</option>`;
+
+
+    if (Array.isArray(list)) {
+
+      list
+        .slice()
+        .sort((a, b) =>
+          String(a.nameKo || "").localeCompare(
+            String(b.nameKo || ""),
+            "ko"
+          )
+        )
+        .forEach(p => {
+
+          const opt =
+            document.createElement("option");
+
+
+          opt.value =
+            p.id;
+
+
+          opt.text =
+            `${p.nameKo || p.nameRu || p.nameEn} (${p.group})`;
+
+
+          pubSelect.appendChild(opt);
+        });
+    }
+
+
+    pubSelect.dataset.populated =
+      "true";
+  }
+
+
+  /*
+   * 봉사연도 자동 생성
+   */
+  const now =
+    new Date();
+
+  const y =
+    now.getFullYear();
+
+  const m =
+    now.getMonth() + 1;
+
+  const currentSY =
+    m >= 9
+      ? y + 1
+      : y;
+
+
+  singleYearSelect.innerHTML =
+    "";
+
+  batchYearSelect.innerHTML =
+    "";
+
+
+  /*
+   * 개별 다운로드
+   * 전년도 / 현재 / 다음 연도
+   */
+  for (
+    let sy = Math.max(2026, currentSY - 1);
+    sy <= currentSY + 1;
+    sy++
+  ) {
+
+    const opt =
+      document.createElement("option");
+
+    opt.value =
+      String(sy);
+
+    opt.text =
+      `${sy} 봉사연도`;
+
+
+    if (sy === currentSY) {
+      opt.selected = true;
+    }
+
+
+    singleYearSelect.appendChild(opt);
+  }
+
+
+  /*
+   * 일괄 다운로드
+   */
+  const combined =
+    document.createElement("option");
+
+  combined.value =
+    "CURRENT_AND_PREV";
+
+  combined.text =
+    "⭐ 현재+전년도 (2개년 일괄)";
+
+  combined.selected =
+    true;
+
+  batchYearSelect.appendChild(combined);
+
+
+  for (
+    let sy = Math.max(2026, currentSY - 1);
+    sy <= currentSY + 1;
+    sy++
+  ) {
+
+    const opt =
+      document.createElement("option");
+
+    opt.value =
+      String(sy);
+
+    opt.text =
+      `${sy} 봉사연도`;
+
+
+    batchYearSelect.appendChild(opt);
+  }
+}
+
+  async function downloadSelectedPublisherS21() {
+  const pubSelect =
+    document.getElementById("s21SinglePublisher");
+
+  const year =
+    document.getElementById("s21SingleYear").value;
+
+  const pubId =
+    pubSelect.value;
+
+
+  if (!pubId) {
+    alert("전도인을 선택하세요.");
+    return;
+  }
+
+
+  const pubName =
+    pubSelect.options[
+      pubSelect.selectedIndex
+    ].text;
+
+
+  const btn =
+    document.getElementById("btnSingleS21");
+
+
+  btn.disabled =
+    true;
+
+  btn.innerText =
+    "⏳ S-21 생성 중...";
+
+
+  const res =
+    await apiCall(
+      "exportS21Cards",
+      {
+        yearOption: year,
+        roleFilter: "ALL",
+        publisherId: pubId
+      }
+    );
+
+
+  btn.disabled =
+    false;
+
+  btn.innerText =
+    "📥 개별 S-21 다운로드";
+
+
+  if (res && res.success) {
+
+    window.open(
+      res.downloadUrl,
+      "_blank"
+    );
+
+  } else {
+
+    alert(
+      res
+        ? res.message
+        : "S-21 생성에 실패했습니다."
+    );
+  }
+}
+  
   // ⭐️ 봉사 보고 현황, 미보고자 독려 멘트, 파이오니아 시간 평가 위젯 렌더링
   async function loadServiceReports() {
-    const month = document.getElementById("serviceMonthFilter").value;
-    const res = await apiCall("getMonthlyServiceDashboard", { month: month });
-    if (res) {
-      const m = res.metrics;
-      document.getElementById("m_totalActive").innerText = m.totalActivePublishers;
-      document.getElementById("m_pubReport").innerText = m.pubReportCount;
-      document.getElementById("m_pubStudies").innerText = m.pubStudies;
-      document.getElementById("m_auxReport").innerText = m.auxReportCount;
-      document.getElementById("m_auxHours").innerText = m.auxHours;
-      document.getElementById("m_auxStudies").innerText = m.auxStudies;
-      document.getElementById("m_regReport").innerText = m.regReportCount;
-      document.getElementById("m_regHours").innerText = m.regHours;
-      document.getElementById("m_regStudies").innerText = m.regStudies;
+  const month = document.getElementById("serviceMonthFilter").value;
 
-      const badge = document.getElementById("collectionStatusBadge");
-      if (m.isCollecting) {
-        badge.className = "badge bg-warning text-dark";
-        badge.innerText = "수집중";
-      } else {
-        badge.className = "badge bg-success";
-        badge.innerText = "완료";
-      }
+  if (!month) return;
 
-      // 1. 미보고자 집단별 카드 렌더링
-      const unsubmittedBox = document.getElementById("unsubmittedAlertBox");
-      const unsubmittedContainer = document.getElementById("unsubmittedGroupsContainer");
-      unsubmittedContainer.innerHTML = "";
+  const res = await apiCall(
+    "getMonthlyServiceDashboard",
+    { month: month }
+  );
 
-      let hasUnsubmitted = false;
-      ["사랑", "기쁨", "평화"].forEach(g => {
-        const list = res.unsubmitted[g] || [];
-        if (list.length > 0) {
-          hasUnsubmitted = true;
-          const col = document.createElement("div");
-          col.className = "col-md-4";
-          col.innerHTML = `
-            <div class="card p-2 bg-white border h-100 shadow-sm">
-              <strong class="text-primary">[${g} 집단] (${list.length}명 미제출)</strong>
-              <div class="small text-secondary mt-1">${list.map(p => p.name).join(", ")}</div>
-            </div>
-          `;
-          unsubmittedContainer.appendChild(col);
-        }
-      });
-      unsubmittedBox.style.display = hasUnsubmitted ? "block" : "none";
+  if (!res || !res.metrics) return;
 
-      // 2. 파이오니아 시간 평가 위젯 렌더링
-      renderPioneerEvaluationWidget(res.pioneerEvaluations, month);
 
-      // 3. 보고 제출자 테이블 렌더링 (개별 S-21 다운로드 버튼 포함)
-      const tb = document.getElementById("serviceReportBody");
-      tb.innerHTML = "";
-      res.reports.forEach(r => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td><strong>${r.name}</strong></td>
-          <td>${r.role}</td>
-          <td>${r.participated}</td>
-          <td>${r.hours}</td>
-          <td>${r.credit}</td>
-          <td>${r.studies}</td>
-          <td class="text-start"><small>${r.remarks}</small></td>
-          <td>
-            <button class="btn btn-sm btn-outline-danger py-0 px-2 fw-bold" onclick="downloadSinglePublisherS21('${r.id}', '${r.name}')" title="해당 전도인 2개년 S-21 다운로드">
-              📄 S-21
-            </button>
-          </td>
-        `;
-        tb.appendChild(tr);
-      });
-    }
+  /* =====================================================
+     1. 월간 지표
+     ===================================================== */
+  const m = res.metrics;
+
+  document.getElementById("m_totalActive").innerText =
+    m.totalActivePublishers || 0;
+
+  document.getElementById("m_pubReport").innerText =
+    m.pubReportCount || 0;
+
+  document.getElementById("m_pubStudies").innerText =
+    m.pubStudies || 0;
+
+  document.getElementById("m_auxReport").innerText =
+    m.auxReportCount || 0;
+
+  document.getElementById("m_auxHours").innerText =
+    m.auxHours || 0;
+
+  document.getElementById("m_auxStudies").innerText =
+    m.auxStudies || 0;
+
+  document.getElementById("m_regReport").innerText =
+    m.regReportCount || 0;
+
+  document.getElementById("m_regHours").innerText =
+    m.regHours || 0;
+
+  document.getElementById("m_regStudies").innerText =
+    m.regStudies || 0;
+
+
+  const badge =
+    document.getElementById("collectionStatusBadge");
+
+
+  if (m.isCollecting) {
+    badge.className =
+      "badge bg-warning text-dark";
+
+    badge.innerText =
+      "수집중";
+
+  } else {
+    badge.className =
+      "badge bg-secondary";
+
+    badge.innerText =
+      "수집기간 외";
   }
+
+
+  /* =====================================================
+     2. 제출자 상세
+     ===================================================== */
+  const tb =
+    document.getElementById("serviceReportBody");
+
+  tb.innerHTML = "";
+
+
+  const reports =
+    Array.isArray(res.reports)
+      ? res.reports
+      : [];
+
+
+  if (reports.length === 0) {
+
+    tb.innerHTML = `
+      <tr>
+        <td colspan="8" class="text-muted py-3">
+          해당 월에 제출된 봉사 보고가 없습니다.
+        </td>
+      </tr>
+    `;
+
+  } else {
+
+    reports.forEach(r => {
+
+      const tr =
+        document.createElement("tr");
+
+
+      tr.innerHTML = `
+        <td><strong>${escapeHtmlElder(r.name)}</strong></td>
+
+        <td>${escapeHtmlElder(r.role)}</td>
+
+        <td>${escapeHtmlElder(r.participated)}</td>
+
+        <td>${Number(r.hours) || 0}</td>
+
+        <td>${Number(r.credit) || 0}</td>
+
+        <td>${Number(r.studies) || 0}</td>
+
+        <td class="text-start nowrap">
+          <small>${escapeHtmlElder(r.remarks || "")}</small>
+        </td>
+
+        <td>
+          <button
+            class="btn btn-sm btn-outline-danger py-0 px-2 fw-bold"
+            onclick='downloadSinglePublisherS21(
+              ${JSON.stringify(String(r.id))},
+              ${JSON.stringify(String(r.name))}
+            )'
+            title="현재+전년도 S-21 다운로드"
+          >
+            📄
+          </button>
+        </td>
+      `;
+
+
+      tb.appendChild(tr);
+    });
+  }
+
+
+  /* =====================================================
+     3. 미제출 전도인
+     서버에서 지정한 10~15일에만 표시
+     ===================================================== */
+  const unsubmittedBox =
+    document.getElementById("unsubmittedAlertBox");
+
+  const unsubmittedContainer =
+    document.getElementById("unsubmittedGroupsContainer");
+
+  unsubmittedContainer.innerHTML = "";
+
+
+  let hasUnsubmitted = false;
+
+
+  ["사랑", "기쁨", "평화"].forEach(g => {
+
+    const list =
+      res.unsubmitted &&
+      Array.isArray(res.unsubmitted[g])
+        ? res.unsubmitted[g]
+        : [];
+
+
+    if (list.length === 0) return;
+
+
+    hasUnsubmitted = true;
+
+
+    const col =
+      document.createElement("div");
+
+    col.className =
+      "col-md-4";
+
+
+    col.innerHTML = `
+      <div class="card p-2 bg-white border h-100 shadow-sm">
+
+        <strong class="text-primary">
+          ${g} 집단
+          <span class="badge bg-danger ms-1">
+            ${list.length}명
+          </span>
+        </strong>
+
+        <div class="small text-secondary mt-2">
+          ${list.map(p => escapeHtmlElder(p.name)).join(", ")}
+        </div>
+
+      </div>
+    `;
+
+
+    unsubmittedContainer.appendChild(col);
+  });
+
+
+  unsubmittedBox.style.display =
+    m.showUnsubmittedReminder &&
+    hasUnsubmitted
+      ? "block"
+      : "none";
+
+
+  /* =====================================================
+     4. 파이오니아 평가
+     ===================================================== */
+  renderPioneerEvaluationWidget(
+    res.pioneerEvaluations
+  );
+}
 
   // ⭐️ 파이오니아 2월(300h) 및 8·9월(560h) 시간 평가 위젯
-  function renderPioneerEvaluationWidget(evalData, selectedMonth) {
-    const card = document.getElementById("pioneerEvalCard");
-    const content = document.getElementById("pioneerEvalContent");
+ function renderPioneerEvaluationWidget(evalData) {
+  const card =
+    document.getElementById("pioneerEvalCard");
 
-    if (!evalData) { card.style.display = "none"; return; }
+  const content =
+    document.getElementById("pioneerEvalContent");
 
-    let html = "";
-    if (evalData.midYear.length > 0) {
-      html += `<div class="fw-bold mb-1 text-dark">📋 2월 중간 시간 평가 (300시간 기준 미달 ${evalData.midYear.length}명)</div>`;
-      html += `<div class="d-flex flex-wrap gap-2 mb-2">`;
-      evalData.midYear.forEach(p => {
-        let bClass = "eval-badge-green";
-        if (p.color === "yellow") bClass = "eval-badge-yellow";
-        if (p.color === "red") bClass = "eval-badge-red";
+  const title =
+    document.getElementById("pioneerEvalTitle");
 
-        html += `<span class="badge ${bClass} p-2 fs-6">[${p.group}] ${p.name}: ${p.totalHours}시간 (${p.deficit}h)</span>`;
-      });
-      html += `</div>`;
-    }
+  const badge =
+    document.getElementById("pioneerEvalBadge");
 
-    if (evalData.fullYear.length > 0) {
-      html += `<div class="fw-bold mb-1 text-danger mt-2">🚨 연말 최종 시간 평가 (560시간 기준 미달 ${evalData.fullYear.length}명)</div>`;
-      html += `<div class="d-flex flex-wrap gap-2">`;
-      evalData.fullYear.forEach(p => {
-        html += `<span class="badge eval-badge-red p-2 fs-6">[${p.group}] ${p.name}: ${p.totalHours}시간 (${p.deficit}h)</span>`;
-      });
-      html += `</div>`;
-    }
 
-    if (html) {
-      content.innerHTML = html;
-      card.style.display = "block";
-    } else {
-      card.style.display = "none";
-    }
+  if (!evalData) {
+    card.style.display = "none";
+    return;
   }
+
+
+  const showMid =
+    evalData.showMidEvaluation === true;
+
+  const showFinal =
+    evalData.showFinalEvaluation === true;
+
+
+  /*
+   * 평가 기간이 아니면 카드 자체를 숨김
+   */
+  if (!showMid && !showFinal) {
+    card.style.display = "none";
+    return;
+  }
+
+
+  let targetList = [];
+  let targetHours = 0;
+
+
+  if (showMid) {
+
+    targetList =
+      Array.isArray(evalData.midYear)
+        ? evalData.midYear
+        : [];
+
+    targetHours = 300;
+
+    title.innerText =
+      `⏱️ ${evalData.midServiceYear} 봉사연도 파이오니아 중간 평가`;
+
+    badge.innerText =
+      "2월 20일~말일";
+
+
+  } else {
+
+    targetList =
+      Array.isArray(evalData.fullYear)
+        ? evalData.fullYear
+        : [];
+
+    targetHours = 560;
+
+    title.innerText =
+      `⏱️ ${evalData.finalServiceYear} 봉사연도 파이오니아 최종 평가`;
+
+    badge.innerText =
+      "9월 20~30일";
+  }
+
+
+  const groups =
+    ["사랑", "기쁨", "평화"];
+
+
+  let html = `
+    <div class="small text-secondary mb-2">
+      기준 ${targetHours}시간 미달 대상만 표시합니다.
+    </div>
+
+    <table class="table table-bordered table-sm eval-table mb-0">
+
+      <thead>
+        <tr>
+          <th class="bg-danger-subtle">
+            사랑 집단
+          </th>
+
+          <th class="bg-warning-subtle">
+            기쁨 집단
+          </th>
+
+          <th class="bg-success-subtle">
+            평화 집단
+          </th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr>
+  `;
+
+
+  groups.forEach(groupName => {
+
+    const list =
+      targetList.filter(
+        p => p.group === groupName
+      );
+
+
+    html += "<td>";
+
+
+    if (list.length === 0) {
+
+      html += `
+        <div class="text-center text-muted py-3 small">
+          해당 없음
+        </div>
+      `;
+
+    } else {
+
+      list.forEach(p => {
+
+        const shortage =
+          Number.isFinite(Number(p.shortage))
+            ? Number(p.shortage)
+            : Math.abs(Number(p.deficit) || 0);
+
+
+        let dotClass =
+          "eval-dot-green";
+
+
+        if (p.color === "yellow") {
+          dotClass =
+            "eval-dot-yellow";
+        }
+
+
+        if (p.color === "red") {
+          dotClass =
+            "eval-dot-red";
+        }
+
+
+        html += `
+          <div class="eval-person">
+
+            <span class="eval-dot ${dotClass}"></span>
+
+            <span class="eval-name">
+              ${escapeHtmlElder(p.name)}
+            </span>
+
+            <span class="eval-hours">
+              ${Number(p.totalHours) || 0}h
+            </span>
+
+            <span class="eval-shortage">
+              ${shortage}h 부족
+            </span>
+
+          </div>
+        `;
+      });
+    }
+
+
+    html += "</td>";
+  });
+
+
+  html += `
+        </tr>
+      </tbody>
+    </table>
+  `;
+
+
+  content.innerHTML =
+    html;
+
+  card.style.display =
+    "block";
+}
 
   // ⭐️ 독려 멘트 원클릭 복사 함수
   function copyPrompt(lang) {
@@ -1191,6 +2032,15 @@
       showTab('meeting');
     }
   }
+
+  function escapeHtmlElder(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
 </script>
 </body>
 </html>
