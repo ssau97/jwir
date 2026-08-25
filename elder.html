@@ -1449,19 +1449,16 @@ async function populateS21Controls() {
     document.getElementById("collectionStatusBadge");
 
 
-  if (m.isCollecting) {
-    badge.className =
-      "badge bg-warning text-dark";
+  const isCurrentCollectionMonth =
+    m.isCollecting &&
+    m.reminderTargetMonth === month;
 
-    badge.innerText =
-      "수집중";
-
+  if (isCurrentCollectionMonth) {
+    badge.className = "badge bg-warning text-dark";
+    badge.innerText = "수집중";
   } else {
-    badge.className =
-      "badge bg-secondary";
-
-    badge.innerText =
-      "수집기간 외";
+    badge.className = "badge bg-secondary";
+    badge.innerText = "마감";
   }
 
 
@@ -1664,7 +1661,7 @@ async function populateS21Controls() {
       `⏱️ ${evalData.midServiceYear} 봉사연도 파이오니아 중간 평가`;
 
     badge.innerText =
-      "2월 20일~말일";
+      "2월 20일~28일";
 
 
   } else {
