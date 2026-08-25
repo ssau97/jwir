@@ -25,6 +25,13 @@
     .btn-check:checked + .btn-outline-success { background-color: #198754; color: white; border-color: #198754; }
     .btn-check:checked + .btn-outline-danger { background-color: #dc3545; color: white; border-color: #dc3545; }
     .selected-badge-box { background: #e8f5e9; border: 2px solid #4caf50; border-radius: 12px; font-size: 1.2rem; font-weight: bold; color: #2e7d32; padding: 10px; text-align: center; }
+
+    /* ⭐️ 파이오니아 표 좌측 봉사월 열 틀 고정 (Sticky Header & First Column) */
+    .table-pioneer-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .sticky-col-month { position: sticky; left: 0; background-color: #ffffff; z-index: 2; min-width: 68px; text-align: center; border-right: 2px solid #dee2e6 !important; }
+    thead th.sticky-col-month { background-color: #f8f9fa !important; z-index: 3; }
+    tfoot td.sticky-col-month { background-color: #e8f0fe !important; z-index: 3; }
+    .nowrap { white-space: nowrap; }
   </style>
 </head>
 <body class="py-3">
@@ -55,7 +62,7 @@
       <div class="fw-bold text-primary fs-5" id="txtCurrentMonth"></div>
     </div>
 
-    <!-- ⭐️ [테스트 모드 전용 툴바]: 원하는 봉사월을 자유롭게 선택하여 입력 가능 -->
+    <!-- 테스트 모드 전용 툴바 -->
     <div id="testModeBox" class="card p-2 bg-warning-subtle border-warning shadow-sm mb-3" style="display:none;">
       <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
         <span class="badge bg-warning text-dark fw-bold px-2 py-1">🧪 테스트 모드</span>
@@ -182,16 +189,16 @@
         <button class="btn btn-sm btn-dark fw-bold px-3" onclick="openPioneerEditModal()">수정하기</button>
       </div>
 
-      <!-- 3. 12개월 표 및 연간 합계 -->
-      <div class="table-responsive mb-4 rounded border shadow-sm">
-        <table class="table table-bordered table-hover text-center align-middle mb-0" style="font-size: 0.95rem;">
+      <!-- ⭐️ 3. 파이오니아 12개월 표 (월 고정, 연구-시간-추가-사유 순, 횡스크롤 지원) -->
+      <div class="table-responsive table-pioneer-wrapper mb-4 rounded border shadow-sm">
+        <table class="table table-bordered table-hover text-center align-middle mb-0" style="font-size: 0.92rem;">
           <thead class="table-light">
             <tr>
-              <th id="thMonth">봉사월</th>
-              <th id="thPart">참여</th>
-              <th id="thHours">시간</th>
-              <th id="thCredit">추가</th>
-              <th id="thStudies">연구</th>
+              <th class="sticky-col-month nowrap" id="thMonth">봉사월</th>
+              <th class="nowrap" id="thStudies">연구</th>
+              <th class="nowrap" id="thHours">시간</th>
+              <th class="nowrap" id="thCredit">추가</th>
+              <th class="nowrap" id="thRemarks" style="min-width: 140px;">사유 및 비고</th>
             </tr>
           </thead>
           <tbody id="pioneerRecordTable"></tbody>
@@ -228,10 +235,8 @@
 </div>
 
 <script>
-  // ⭐️ 백엔드로 배포한 Google Apps Script 웹 앱 URL
   const API_URL = "https://script.google.com/macros/s/AKfycbz_Qn5OrZ39cY4NMkIcsvQQTXrFgjrJ-a9ov3PThyp5oMxfuBoQnR4WkpLHl6cIGRsp/exec";
 
-  // ⭐️ 현재 날짜 기준 봉사연도 계산 함수 (9월~익년 8월 기준)
   function getCurrentServiceYear() {
     const now = new Date();
     const year = now.getFullYear();
@@ -274,12 +279,14 @@
       remarks: "비고 및 메모 (선택)", remarksPh: "특이사항을 입력하세요",
       submit: "보고서 제출하기", submitUpdate: "수정하여 저장하기", submitting: "제출 중...",
       pioneerTitle: "정규 파이오니아 기록 열람", pioneerDesc: "성명을 선택하고 비밀번호(PIN)를 입력하세요.",
-      pioneerLogin: "기록 조회하기", thMonth: "봉사월", thPart: "참여", thHours: "시간", thCredit: "추가", thStudies: "연구",
+      pioneerLogin: "기록 조회하기", thMonth: "봉사월", thHours: "시간", thCredit: "추가", thStudies: "연구", thRemarks: "사유 및 비고",
       pinTitle: "🔐 비밀번호(PIN) 변경", pinCur: "현재 비밀번호", pinNew: "새 비밀번호 (4~6자리)", pinConfirm: "새 비밀번호 확인", pinSubmit: "비밀번호 변경 완료",
       alreadySubmitted: "선택하신 월의 보고가 이미 입력되어 있습니다. 수정 후 다시 제출하실 수 있습니다.",
       rememberPin: "이 기기에서 비밀번호(PIN) 기억하기",
       pioneerYearOpt: (yr) => `${yr} 봉사연도`,
-      btnBack: "← 뒤로가기", lblYearFilter: "📅 봉사연도", pioneerBadge: "정규 파이오니아"
+      btnBack: "← 뒤로가기", lblYearFilter: "📅 봉사연도", pioneerBadge: "정규 파이오니아",
+      monthName: (m) => `${m}월`,
+      totalSummary: (tot) => `연간 합계 (총 ${tot}시간)`
     },
     ru: {
       badge: (yr) => `${yr} служебный год`,
@@ -295,12 +302,17 @@
       remarks: "Примечания (необязательно)", remarksPh: "Введите примечания",
       submit: "Отправить отчет", submitUpdate: "Изменить и сохранить", submitting: "Отправка...",
       pioneerTitle: "Просмотр записей общего пионера", pioneerDesc: "Выберите имя и введите PIN-код.",
-      pioneerLogin: "Посмотреть записи", thMonth: "Месяц", thPart: "Участие", thHours: "Часы", thCredit: "Зачет", thStudies: "Изучения",
+      pioneerLogin: "Посмотреть записи", thMonth: "Месяц", thHours: "Часы", thCredit: "Зачет", thStudies: "Изучения", thRemarks: "Примечания",
       pinTitle: "🔐 Изменить PIN-код", pinCur: "Текущий PIN-код", pinNew: "Новый PIN-код (4~6 цифр)", pinConfirm: "Подтвердите новый PIN", pinSubmit: "Изменить PIN-код",
       alreadySubmitted: "Отчет за этот месяц уже сдан. Вы можете отредактировать и сохранить его снова.",
       rememberPin: "Запомнить PIN-код на этом устройстве",
       pioneerYearOpt: (yr) => `${yr} служебный год`,
-      btnBack: "← Назад", lblYearFilter: "📅 Служебный год", pioneerBadge: "Общий пионер"
+      btnBack: "← Назад", lblYearFilter: "📅 Служебный год", pioneerBadge: "Общий пионер",
+      monthName: (m) => {
+        const ruM = ["", "Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"];
+        return ruM[m] || `${m} мес`;
+      },
+      totalSummary: (tot) => `Итого за год (${tot} ч)`
     },
     en: {
       badge: (yr) => `${yr} Service Year`,
@@ -316,18 +328,20 @@
       remarks: "Remarks / Notes (Optional)", remarksPh: "Enter any remarks",
       submit: "Submit Report", submitUpdate: "Update & Save", submitting: "Submitting...",
       pioneerTitle: "Regular Pioneer Record View", pioneerDesc: "Select your name and enter PIN code.",
-      pioneerLogin: "View Records", thMonth: "Month", thPart: "Part.", thHours: "Hours", thCredit: "Credit", thStudies: "Studies",
+      pioneerLogin: "View Records", thMonth: "Month", thHours: "Hours", thCredit: "Credit", thStudies: "Studies", thRemarks: "Remarks",
       pinTitle: "🔐 Change PIN Code", pinCur: "Current PIN", pinNew: "New PIN (4~6 digits)", pinConfirm: "Confirm New PIN", pinSubmit: "Update PIN",
       alreadySubmitted: "The report for this month has already been submitted. You can edit and re-submit it.",
       rememberPin: "Remember PIN on this device",
       pioneerYearOpt: (yr) => `${yr} Service Year`,
-      btnBack: "← Back", lblYearFilter: "📅 Service Year", pioneerBadge: "Regular Pioneer"
+      btnBack: "← Back", lblYearFilter: "📅 Service Year", pioneerBadge: "Regular Pioneer",
+      monthName: (m) => {
+        const enM = ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        return enM[m] || `M${m}`;
+      },
+      totalSummary: (tot) => `Annual Total (${tot} hrs)`
     }
   };
 
-  /**
-   * Google Apps Script REST API 통신 라우터 (POST)
-   */
   async function apiCall(action, payload = {}) {
     try {
       const response = await fetch(API_URL, {
@@ -356,7 +370,6 @@
       isPeriodOpen = timeInfo.isOpen;
       isTestMode = timeInfo.isTestMode || false;
 
-      // ⭐️ 테스트 모드일 때 상단에 봉사월 직접 선택 드롭다운 생성
       if (isTestMode && Array.isArray(timeInfo.testMonths)) {
         const testBox = document.getElementById("testModeBox");
         const testSel = document.getElementById("testMonthSelect");
@@ -386,7 +399,6 @@
     }
   };
 
-  // ⭐️ 테스트 봉사월 변경 시 호출
   async function onTestMonthChanged() {
     activeReportMonth = document.getElementById("testMonthSelect").value;
     updateMonthDisplayByStr(activeReportMonth);
@@ -445,10 +457,10 @@
     document.getElementById("lblRememberPin").innerText = t.rememberPin;
     document.getElementById("btnPioneerLogin").innerText = t.pioneerLogin;
     document.getElementById("thMonth").innerText = t.thMonth;
-    document.getElementById("thPart").innerText = t.thPart;
     document.getElementById("thHours").innerText = t.thHours;
     document.getElementById("thCredit").innerText = t.thCredit;
     document.getElementById("thStudies").innerText = t.thStudies;
+    document.getElementById("thRemarks").innerText = t.thRemarks;
     
     document.getElementById("btnPioneerBack").innerText = t.btnBack;
     document.getElementById("lblPioneerYear").innerText = t.lblYearFilter;
@@ -464,6 +476,7 @@
     document.getElementById("btnChangePin").innerText = t.pinSubmit;
 
     populatePublisherDropdowns();
+    if (pioneerAllRecords) renderPioneerRecordTable();
   }
 
   function switchMainTab(tab) {
@@ -583,7 +596,6 @@
     }
   }
 
-  // ⭐️ 기존 보고 조회 및 폼 자동 채우기
   async function checkAndFillExistingReport(pubId, month) {
     const btn = document.getElementById("submitBtn");
     const res = await apiCall("getSingleMonthReport", { pubId: pubId, month: month });
@@ -659,6 +671,7 @@
     txt.style.display = sel === "기타" ? "block" : "none";
   }
 
+  // ⭐️ 보고서 제출 함수 (바이링궐 성공/실패 팝업 적용)
   async function submitServiceReport() {
     if (!selectedPub) return;
     const btn = document.getElementById("submitBtn");
@@ -698,12 +711,16 @@
     };
 
     const res = await apiCall("submitReport", payload);
-    alert(res.message);
     btn.disabled = false;
     btn.innerText = i18n[currentLang].submitUpdate || "수정하여 저장하기";
+
+    if (res && res.success) {
+      alert(`【 제출 성공 | Отчет успешно отправлен 】\n\n${res.message}`);
+    } else {
+      alert(`【 제출 실패 | Ошибка отправки 】\n\n다시 제출해 주세요. (Пожалуйста, попробуйте еще раз)\n${res ? res.message : ''}`);
+    }
   }
 
-  // --- 파이오니아 개인 기록 & PIN 기억하기 ---
   function onPioneerSelectChanged() {
     const pioId = document.getElementById("pioneerSelect").value;
     if (pioId) {
@@ -733,7 +750,6 @@
       const nameShow = getDisplayName(selectedPioneer);
       document.getElementById("pioneerNameHeader").innerText = `${nameShow}`;
 
-      // ⭐️ 2026년부터 현재 봉사연도+1년까지 드롭다운 옵션 자동 생성
       const curSY = getCurrentServiceYear();
       const yrFilter = document.getElementById("pioneerYearFilter");
       yrFilter.innerHTML = "";
@@ -755,11 +771,10 @@
         document.getElementById("pioneerEditAlert").style.display = "none";
       }
     } else {
-      alert(res ? res.message : "조회 실패");
+      alert(`【 인증 실패 | Ошибка авторизации 】\n\n${res ? res.message : "조회 실패"}`);
     }
   }
 
-  // ⭐️ 선택된 봉사연도의 12개월 데이터 렌더링 (0 값은 빈칸으로 깔끔하게 표시)
   function renderPioneerRecordTable() {
     if (!pioneerAllRecords) return;
     const yr = Number(document.getElementById("pioneerYearFilter").value) || getCurrentServiceYear();
@@ -776,12 +791,14 @@
 
     let sumHours = 0;
     let sumCredit = 0;
-    let sumStudies = 0;
 
     months.forEach(m => {
       const r = pioneerAllRecords[m] || { participated: "-", hours: 0, credit: 0, studies: 0, remarks: "" };
       const tr = document.createElement("tr");
       
+      const mNum = Number(m.split("-")[1]);
+      const monthLabel = i18n[currentLang].monthName(mNum);
+
       const isPart = r.participated === "예";
       const hVal = Number(r.hours) || 0;
       const cVal = Number(r.credit) || 0;
@@ -790,15 +807,14 @@
       if (isPart) {
         sumHours += hVal;
         sumCredit += cVal;
-        sumStudies += sVal;
       }
 
       tr.innerHTML = `
-        <td><strong>${m}</strong></td>
-        <td>${r.participated}</td>
-        <td>${hVal > 0 ? hVal : ''}</td>
+        <td class="sticky-col-month nowrap"><strong>${monthLabel}</strong></td>
+        <td>${sVal > 0 ? sVal : ''}</td>
+        <td class="fw-bold">${hVal > 0 ? hVal : ''}</td>
         <td>${cVal > 0 ? cVal : ''}</td>
-        <td>${cVal > 0 || hVal > 0 || sVal > 0 ? (sVal > 0 ? sVal : '') : (isPart && sVal > 0 ? sVal : '')}</td>
+        <td class="text-start small text-secondary">${r.remarks || ''}</td>
       `;
       tb.appendChild(tr);
     });
@@ -807,10 +823,11 @@
     if (tfoot) {
       tfoot.innerHTML = `
         <tr class="table-primary fs-6">
-          <td colspan="2"><strong>연간 합계 (총 ${sumHours + sumCredit}시간)</strong></td>
-          <td><strong>${sumHours > 0 ? sumHours : 0}</strong></td>
-          <td><strong>${sumCredit > 0 ? sumCredit : 0}</strong></td>
-          <td><strong>${sumStudies > 0 ? sumStudies : 0}</strong></td>
+          <td class="sticky-col-month nowrap"><strong>${i18n[currentLang].totalSummary(sumHours + sumCredit)}</strong></td>
+          <td class="text-muted">-</td>
+          <td class="fw-bold text-primary">${sumHours > 0 ? sumHours : 0}</td>
+          <td class="fw-bold text-success">${sumCredit > 0 ? sumCredit : 0}</td>
+          <td class="text-muted small">-</td>
         </tr>
       `;
     }
@@ -824,7 +841,19 @@
     filterPioneers();
   }
 
+  // ⭐️ 파이오니아 [수정하기] 시 본인 확인 PIN 재인증 후 이동
   async function openPioneerEditModal() {
+    if (!selectedPioneer) return;
+
+    const entered = prompt(`[${selectedPioneer.nameKo || selectedPioneer.nameRu}] 님의 비밀번호(PIN)를 입력하세요.\n(Введите PIN-код для подтверждения):`);
+    if (!entered) return;
+
+    const verifyRes = await apiCall("getPioneerYearlyRecord", { pubId: selectedPioneer.id, enteredPin: entered });
+    if (!verifyRes || !verifyRes.success) {
+      alert("【 인증 실패 | Ошибка авторизации 】\n\n비밀번호가 일치하지 않습니다. (Неверный PIN-код)");
+      return;
+    }
+
     switchMainTab('report');
     document.getElementById("publisherSelect").value = selectedPioneer.id;
     await onPublisherSelectChanged();
