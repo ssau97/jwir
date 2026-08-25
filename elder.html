@@ -195,16 +195,44 @@
       </div>
     </div>
 
-    <!-- [탭 3: 봉사 보고 현황 & 9대 지표 & S-21 ZIP 다운로드] -->
+    <!-- [탭 3: 봉사 보고 현황 & 9대 지표 & S-21 다운로드 패널] -->
     <div id="tabService" class="card p-3 mb-4" style="display:none;">
+      
+      <!-- ⭐️ S-21 순회방문 및 전도인 카드 조건부 다운로드 패널 -->
+      <div class="card p-3 bg-white border border-danger-subtle shadow-sm mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+          <h6 class="fw-bold text-danger mb-0">📦 S-21 전도인 카드 다운로드 매니저</h6>
+          <span class="badge bg-danger text-white">순회방문 대비 / 한국어 카드</span>
+        </div>
+        <div class="row g-2 align-items-center">
+          <div class="col-md-4">
+            <label class="form-label small fw-bold text-secondary mb-1">대상 연도</label>
+            <select id="s21ExportYear" class="form-select form-select-sm fw-bold border-danger">
+              <option value="CURRENT_AND_PREV" selected>⭐️ 현재+전년도 (2027 + 2026년 2개년)</option>
+              <option value="2027">2027 봉사연도 (현재)</option>
+              <option value="2026">2026 봉사연도 (전년도)</option>
+              <option value="2028">2028 봉사연도</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small fw-bold text-secondary mb-1">대상 신분</label>
+            <select id="s21ExportRole" class="form-select form-select-sm fw-bold border-secondary">
+              <option value="ALL" selected>전체 (전도인 + 파이오니아)</option>
+              <option value="PIONEER_ONLY">정규 파이오니아만</option>
+              <option value="PUBLISHER_ONLY">일반 전도인만</option>
+            </select>
+          </div>
+          <div class="col-md-4 d-flex align-items-end">
+            <button class="btn btn-danger btn-sm w-100 fw-bold py-2 shadow-sm" id="btnExportS21Batch" onclick="downloadS21Batch()">
+              📥 조건별 일괄 다운로드 (ZIP)
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h5 class="fw-bold mb-0">월별 봉사 보고 현황</h5>
-        <div class="d-flex gap-2">
-          <button class="btn btn-sm btn-outline-danger fw-bold shadow-sm" id="btnDownloadAllS21" onclick="downloadAllS21Zip()">
-            📦 순회방문 S-21 전체 일괄 다운로드 (ZIP)
-          </button>
-          <select id="serviceMonthFilter" class="form-select w-auto fw-bold" onchange="loadServiceReports()"></select>
-        </div>
+        <select id="serviceMonthFilter" class="form-select w-auto fw-bold" onchange="loadServiceReports()"></select>
       </div>
 
       <div class="card p-3 bg-light mb-3">
@@ -231,9 +259,12 @@
       </div>
 
       <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-        <table class="table table-hover table-sm">
+        <table class="table table-hover table-sm align-middle text-center">
           <thead class="table-light">
-            <tr><th>성명</th><th>신분</th><th>참여</th><th>시간</th><th>추가</th><th>연구</th><th>비고</th></tr>
+            <tr>
+              <th>성명</th><th>신분</th><th>참여</th><th>시간</th><th>추가</th><th>연구</th><th>비고</th>
+              <th>S-21</th>
+            </tr>
           </thead>
           <tbody id="serviceReportBody"></tbody>
         </table>
@@ -789,7 +820,7 @@
     sel.dataset.populated = "true";
   }
 
-  // --- 봉사 보고 현황 & 9대 지표 ---
+  // --- 봉사 보고 현황 & 9대 지표 & 개별 S-21 다운로드 버튼 포함 ---
   async function loadServiceReports() {
     const month = document.getElementById("serviceMonthFilter").value;
     const res = await apiCall("getMonthlyServiceDashboard", { month: month });
@@ -818,7 +849,20 @@
       tb.innerHTML = "";
       res.reports.forEach(r => {
         const tr = document.createElement("tr");
-        tr.innerHTML = `<td>${r.name}</td><td>${r.role}</td><td>${r.participated}</td><td>${r.hours}</td><td>${r.credit}</td><td>${r.studies}</td><td>${r.remarks}</td>`;
+        tr.innerHTML = `
+          <td><strong>${r.name}</strong></td>
+          <td>${r.role}</td>
+          <td>${r.participated}</td>
+          <td>${r.hours}</td>
+          <td>${r.credit}</td>
+          <td>${r.studies}</td>
+          <td class="text-start"><small>${r.remarks}</small></td>
+          <td>
+            <button class="btn btn-sm btn-outline-danger py-0 px-2 fw-bold" onclick="downloadSinglePublisherS21('${r.id}', '${r.name}')" title="해당 전도인 2개년 S-21 다운로드">
+              📄 S-21
+            </button>
+          </td>
+        `;
         tb.appendChild(tr);
       });
 
@@ -840,18 +884,43 @@
     }
   }
 
-  // --- 순회방문 S-21 전체 일괄 ZIP 다운로드 ---
-  async function downloadAllS21Zip() {
-    const btn = document.getElementById("btnDownloadAllS21");
-    btn.disabled = true;
-    btn.innerText = "⏳ 전체 S-21 PDF 생성 및 압축 중...";
+  // ⭐️ [시나리오 1 & 2]: 조건별 S-21 일괄 압축 다운로드
+  async function downloadS21Batch() {
+    const yearOpt = document.getElementById("s21ExportYear").value;
+    const roleOpt = document.getElementById("s21ExportRole").value;
+    const btn = document.getElementById("btnExportS21Batch");
 
-    const res = await apiCall("downloadAllActiveS21Zip");
+    btn.disabled = true;
+    btn.innerText = "⏳ 조건에 맞는 S-21 PDF 생성 및 압축 중...";
+
+    const res = await apiCall("exportS21Cards", {
+      yearOption: yearOpt,
+      roleFilter: roleOpt
+    });
+
     btn.disabled = false;
-    btn.innerText = "📦 순회방문 S-21 전체 일괄 다운로드 (ZIP)";
+    btn.innerText = "📥 조건별 일괄 다운로드 (ZIP)";
 
     if (res && res.success) {
-      alert(`총 ${res.totalCount}명의 S-21(한국어) 카드가 성공적으로 압축되었습니다.\n다운로드를 시작합니다.`);
+      alert(`총 ${res.totalCount}개의 S-21 카드가 압축되었습니다.\n다운로드를 시작합니다.`);
+      window.open(res.downloadUrl, '_blank');
+    } else {
+      alert(res ? res.message : "다운로드 생성에 실패했습니다.");
+    }
+  }
+
+  // ⭐️ [시나리오 3]: 특정 전도인의 현재+전년도 2개년 S-21 개별 다운로드
+  async function downloadSinglePublisherS21(pubId, pubName) {
+    if (!confirm(`[${pubName}] 전도인의 현재 및 전년도(2개년) S-21 카드를 다운로드하시겠습니까?`)) return;
+
+    const res = await apiCall("exportS21Cards", {
+      yearOption: "CURRENT_AND_PREV",
+      roleFilter: "ALL",
+      publisherId: pubId
+    });
+
+    if (res && res.success) {
+      alert(`[${pubName}] 전도인의 S-21 카드가 준비되었습니다.\n다운로드를 시작합니다.`);
       window.open(res.downloadUrl, '_blank');
     } else {
       alert(res ? res.message : "다운로드 생성에 실패했습니다.");
