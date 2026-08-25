@@ -66,6 +66,11 @@
     .family-card-member:last-child {
       border-bottom: none;
     }
+
+    /* 파이오니아 평가 뱃지 */
+    .eval-badge-green { background-color: #d1e7dd; color: #0f5132; border: 1px solid #badbcc; font-weight: bold; }
+    .eval-badge-yellow { background-color: #fff3cd; color: #664d03; border: 1px solid #ffecb5; font-weight: bold; }
+    .eval-badge-red { background-color: #f8d7da; color: #842029; border: 1px solid #f5c2c7; font-weight: bold; }
   </style>
 </head>
 <body class="py-3">
@@ -195,41 +200,43 @@
       </div>
     </div>
 
-    <!-- [탭 3: 봉사 보고 현황 & 9대 지표 & S-21 다운로드 패널] -->
+    <!-- [탭 3: 봉사 보고 현황 & 9대 지표 & 미보고자 독려 & 파이오니아 평가] -->
     <div id="tabService" class="card p-3 mb-4" style="display:none;">
       
-      <!-- ⭐️ S-21 순회방문 및 전도인 카드 조건부 다운로드 패널 -->
-      <div class="card p-3 bg-white border border-danger-subtle shadow-sm mb-3">
-        <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
-          <h6 class="fw-bold text-danger mb-0">📦 S-21 전도인 카드 다운로드 매니저</h6>
-          <span class="badge bg-danger text-white">순회방문 대비 / 한국어 카드</span>
+      <!-- ⭐️ 1. 미보고자 집단별 알림 및 원클릭 독려 멘트 복사 박스 (최상단) -->
+      <div id="unsubmittedAlertBox" class="card p-3 bg-danger-subtle border-danger shadow-sm mb-3" style="display:none;">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h6 class="fw-bold text-danger mb-0">📢 미제출 전도인 현황 (집단 감독자 연락용)</h6>
+          <span class="badge bg-danger">매월 10일 독려</span>
         </div>
-        <div class="row g-2 align-items-center">
-          <div class="col-md-4">
-            <label class="form-label small fw-bold text-secondary mb-1">대상 연도</label>
-            <select id="s21ExportYear" class="form-select form-select-sm fw-bold border-danger">
-              <option value="CURRENT_AND_PREV" selected>⭐️ 현재+전년도 (2027 + 2026년 2개년)</option>
-              <option value="2027">2027 봉사연도 (현재)</option>
-              <option value="2026">2026 봉사연도 (전년도)</option>
-              <option value="2028">2028 봉사연도</option>
-            </select>
+        
+        <div class="row g-2 mb-3" id="unsubmittedGroupsContainer"></div>
+
+        <div class="card p-2 bg-white border-0 shadow-sm">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <small class="fw-bold text-primary">🇰🇷 한국어 독려 메시지:</small>
+            <button class="btn btn-sm btn-outline-primary py-0 px-2 fw-bold" onclick="copyPrompt('ko')">📋 복사</button>
           </div>
-          <div class="col-md-4">
-            <label class="form-label small fw-bold text-secondary mb-1">대상 신분</label>
-            <select id="s21ExportRole" class="form-select form-select-sm fw-bold border-secondary">
-              <option value="ALL" selected>전체 (전도인 + 파이오니아)</option>
-              <option value="PIONEER_ONLY">정규 파이오니아만</option>
-              <option value="PUBLISHER_ONLY">일반 전도인만</option>
-            </select>
+          <p class="small text-dark mb-2 bg-light p-2 rounded" id="promptKo">지난 달 수고하신 야외 봉사 보고를 오늘 10일까지 제출해 주시기 바랍니다.</p>
+
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <small class="fw-bold text-success">🇷🇺 러시아어 독려 메시지 (Русский):</small>
+            <button class="btn btn-sm btn-outline-success py-0 px-2 fw-bold" onclick="copyPrompt('ru')">📋 복사</button>
           </div>
-          <div class="col-md-4 d-flex align-items-end">
-            <button class="btn btn-danger btn-sm w-100 fw-bold py-2 shadow-sm" id="btnExportS21Batch" onclick="downloadS21Batch()">
-              📥 조건별 일괄 다운로드 (ZIP)
-            </button>
-          </div>
+          <p class="small text-dark mb-0 bg-light p-2 rounded" id="promptRu">Пожалуйста, сдайте отчет о проповедническом служении за прошлый месяц до 10-го числа.</p>
         </div>
       </div>
 
+      <!-- ⭐️ 2. 파이오니아 시간 평가 위젯 (2월 300h / 8·9월 560h 미달자 목록) -->
+      <div id="pioneerEvalCard" class="card p-3 bg-warning-subtle border-warning shadow-sm mb-3" style="display:none;">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h6 class="fw-bold text-dark mb-0" id="pioneerEvalTitle">⏱️ 파이오니아 시간 평가 분석</h6>
+          <span class="badge bg-dark" id="pioneerEvalBadge">평가</span>
+        </div>
+        <div id="pioneerEvalContent" class="small"></div>
+      </div>
+
+      <!-- 3. 월별 총괄 지표 및 필터 -->
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h5 class="fw-bold mb-0">월별 봉사 보고 현황</h5>
         <select id="serviceMonthFilter" class="form-select w-auto fw-bold" onchange="loadServiceReports()"></select>
@@ -253,12 +260,8 @@
         </div>
       </div>
 
-      <div id="unsubmittedAlertBox" class="alert alert-danger mb-3" style="display:none;">
-        <h6 class="fw-bold">⚠️ 현재 미제출 전도인 명단 (집단별)</h6>
-        <div id="unsubmittedListContent"></div>
-      </div>
-
-      <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+      <!-- 4. 보고 제출 전도인 상세 테이블 -->
+      <div class="table-responsive mb-4" style="max-height: 420px; overflow-y: auto;">
         <table class="table table-hover table-sm align-middle text-center">
           <thead class="table-light">
             <tr>
@@ -269,6 +272,39 @@
           <tbody id="serviceReportBody"></tbody>
         </table>
       </div>
+
+      <!-- ⭐️ 5. S-21 다운로드 매니저 (하단으로 배치) -->
+      <div class="card p-3 bg-white border border-danger-subtle shadow-sm mt-3">
+        <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+          <h6 class="fw-bold text-danger mb-0">📦 S-21 전도인 카드 다운로드 매니저</h6>
+          <span class="badge bg-danger text-white">순회방문 대비 / 한국어 카드</span>
+        </div>
+        <div class="row g-2 align-items-center">
+          <div class="col-md-4">
+            <label class="form-label small fw-bold text-secondary mb-1">대상 연도</label>
+            <select id="s21ExportYear" class="form-select form-select-sm fw-bold border-danger">
+              <option value="CURRENT_AND_PREV" selected>⭐️ 현재+전년도 (2개년 일괄)</option>
+              <option value="2027">2027 봉사연도 (현재)</option>
+              <option value="2026">2026 봉사연도 (전년도)</option>
+              <option value="2028">2028 봉사연도</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small fw-bold text-secondary mb-1">대상 신분</label>
+            <select id="s21ExportRole" class="form-select form-select-sm fw-bold border-secondary">
+              <option value="ALL" selected>전체 (전도인 + 파이오니아)</option>
+              <option value="PIONEER_ONLY">정규 파이오니아만</option>
+              <option value="PUBLISHER_ONLY">일반 전도인만</option>
+            </select>
+          </div>
+          <div class="col-md-4 d-flex align-items-end">
+            <button class="btn btn-danger btn-sm w-100 fw-bold py-2 shadow-sm" id="btnExportS21Batch" onclick="downloadS21Batch()">
+              📥 조건별 일괄 다운로드 (ZIP)
+            </button>
+          </div>
+        </div>
+      </div>
+
     </div>
 
     <!-- [탭 4: 비상연락망 (틀 고정 횡스크롤 & 가족 묶음, 기타정보 제외)] -->
@@ -423,20 +459,16 @@
 </div>
 
 <script>
-  // ⭐️ 백엔드로 배포한 Google Apps Script 웹 앱 URL을 입력하세요.
   const API_URL = "https://script.google.com/macros/s/AKfycbz_Qn5OrZ39cY4NMkIcsvQQTXrFgjrJ-a9ov3PThyp5oMxfuBoQnR4WkpLHl6cIGRsp/exec";
 
   let groupData = {};
   let currentGroup = "사랑";
   let activeElder = "";
-  let activeElderPubId = ""; // PIN 변경 대상 고유 ID
-  let currentMeetingDetails = {}; // 선택된 일자의 저장된 출석 상세 데이터
+  let activeElderPubId = "";
+  let currentMeetingDetails = {};
 
   const absentReasonList = ["모름", "병가", "외부강연", "여행", "타 집회 참석", "타 대회 참석", "기타", "메모(직접입력)"];
 
-  /**
-   * Google Apps Script REST API 통신 라우터 (POST)
-   */
   async function apiCall(action, payload = {}) {
     try {
       const response = await fetch(API_URL, {
@@ -550,7 +582,6 @@
     renderGroupMembers();
   }
 
-  // --- 집단 명부 렌더링 ---
   function renderGroupMembers() {
     document.getElementById("groupTitle").innerText = `${currentGroup} 집단 명부`;
     const container = document.getElementById("groupMemberList");
@@ -589,7 +620,6 @@
 
     members.forEach(m => {
       const pName = m.nameKo || m.nameRu;
-      
       let isAbsent = false;
       let reasonVal = "모름";
       let customReasonText = "";
@@ -745,7 +775,6 @@
     await checkDateCompletionStatus(mDate);
   }
 
-  // --- 집회 참석 현황 (캘린더 / S-88) ---
   async function loadAttendanceCalendar() {
     const ym = document.getElementById("calendarMonthPicker").value;
     const res = await apiCall("getMeetingAttendanceCalendarData", { yearMonth: ym });
@@ -781,7 +810,6 @@
     }
   }
 
-  // ⭐️ 봉사 보고 현황 드롭다운 자동 생성 (2026년부터 미래 연도까지)
   function populateServiceMonthDropdown() {
     const sel = document.getElementById("serviceMonthFilter");
     if (!sel || sel.dataset.populated === "true") return;
@@ -820,7 +848,6 @@
     sel.dataset.populated = "true";
   }
 
-  // --- 봉사 보고 현황 & 9대 지표 & 개별 S-21 다운로드 버튼 포함 ---
   async function loadServiceReports() {
     const month = document.getElementById("serviceMonthFilter").value;
     const res = await apiCall("getMonthlyServiceDashboard", { month: month });
@@ -845,6 +872,30 @@
         badge.innerText = "완료";
       }
 
+      const unsubmittedBox = document.getElementById("unsubmittedAlertBox");
+      const unsubmittedContainer = document.getElementById("unsubmittedGroupsContainer");
+      unsubmittedContainer.innerHTML = "";
+
+      let hasUnsubmitted = false;
+      ["사랑", "기쁨", "평화"].forEach(g => {
+        const list = res.unsubmitted[g] || [];
+        if (list.length > 0) {
+          hasUnsubmitted = true;
+          const col = document.createElement("div");
+          col.className = "col-md-4";
+          col.innerHTML = `
+            <div class="card p-2 bg-white border h-100 shadow-sm">
+              <strong class="text-primary">[${g} 집단] (${list.length}명 미제출)</strong>
+              <div class="small text-secondary mt-1">${list.map(p => p.name).join(", ")}</div>
+            </div>
+          `;
+          unsubmittedContainer.appendChild(col);
+        }
+      });
+      unsubmittedBox.style.display = hasUnsubmitted ? "block" : "none";
+
+      renderPioneerEvaluationWidget(res.pioneerEvaluations, month);
+
       const tb = document.getElementById("serviceReportBody");
       tb.innerHTML = "";
       res.reports.forEach(r => {
@@ -865,26 +916,58 @@
         `;
         tb.appendChild(tr);
       });
-
-      const d = new Date().getDate();
-      const alertBox = document.getElementById("unsubmittedAlertBox");
-      if (d >= 7 && d <= 15) {
-        let content = "";
-        ["사랑", "기쁨", "평화"].forEach(g => {
-          const list = res.unsubmitted[g] || [];
-          if (list.length > 0) {
-            content += `<strong>[${g} 집단]</strong>: ` + list.map(p => p.name).join(", ") + `<br>`;
-          }
-        });
-        document.getElementById("unsubmittedListContent").innerHTML = content || "모든 전도인이 보고를 완료했습니다.";
-        alertBox.style.display = "block";
-      } else {
-        alertBox.style.display = "none";
-      }
     }
   }
 
-  // ⭐️ [시나리오 1 & 2]: 조건별 S-21 일괄 압축 다운로드
+  function renderPioneerEvaluationWidget(evalData, selectedMonth) {
+    const card = document.getElementById("pioneerEvalCard");
+    const content = document.getElementById("pioneerEvalContent");
+
+    if (!evalData) { card.style.display = "none"; return; }
+
+    let html = "";
+    if (evalData.midYear.length > 0) {
+      html += `<div class="fw-bold mb-1 text-dark">📋 2월 중간 시간 평가 (300시간 기준 미달 ${evalData.midYear.length}명)</div>`;
+      html += `<div class="d-flex flex-wrap gap-2 mb-2">`;
+      evalData.midYear.forEach(p => {
+        let bClass = "eval-badge-green";
+        if (p.color === "yellow") bClass = "eval-badge-yellow";
+        if (p.color === "red") bClass = "eval-badge-red";
+
+        html += `<span class="badge ${bClass} p-2 fs-6">[${p.group}] ${p.name}: ${p.totalHours}시간 (${p.deficit}h)</span>`;
+      });
+      html += `</div>`;
+    }
+
+    if (evalData.fullYear.length > 0) {
+      html += `<div class="fw-bold mb-1 text-danger mt-2">🚨 연말 최종 시간 평가 (560시간 기준 미달 ${evalData.fullYear.length}명)</div>`;
+      html += `<div class="d-flex flex-wrap gap-2">`;
+      evalData.fullYear.forEach(p => {
+        html += `<span class="badge eval-badge-red p-2 fs-6">[${p.group}] ${p.name}: ${p.totalHours}시간 (${p.deficit}h)</span>`;
+      });
+      html += `</div>`;
+    }
+
+    if (html) {
+      content.innerHTML = html;
+      card.style.display = "block";
+    } else {
+      card.style.display = "none";
+    }
+  }
+
+  function copyPrompt(lang) {
+    const text = lang === 'ko' 
+      ? document.getElementById("promptKo").innerText 
+      : document.getElementById("promptRu").innerText;
+
+    navigator.clipboard.writeText(text).then(() => {
+      alert(`[${lang === 'ko' ? '한국어' : '러시아어'}] 독려 메시지가 클립보드에 복사되었습니다!\n메신저에 붙여넣어 전송하세요.`);
+    }).catch(() => {
+      alert("복사에 실패했습니다. 텍스트를 직접 복사해 주세요.");
+    });
+  }
+
   async function downloadS21Batch() {
     const yearOpt = document.getElementById("s21ExportYear").value;
     const roleOpt = document.getElementById("s21ExportRole").value;
@@ -909,7 +992,6 @@
     }
   }
 
-  // ⭐️ [시나리오 3]: 특정 전도인의 현재+전년도 2개년 S-21 개별 다운로드
   async function downloadSinglePublisherS21(pubId, pubName) {
     if (!confirm(`[${pubName}] 전도인의 현재 및 전년도(2개년) S-21 카드를 다운로드하시겠습니까?`)) return;
 
@@ -927,7 +1009,6 @@
     }
   }
 
-  // --- 비상연락망 (가족별 지그재그 배경색 및 틀 고정, 기타정보 제외) ---
   async function loadEmergencyData() {
     const list = await apiCall("getEmergencyContacts");
     if (Array.isArray(list)) {
@@ -962,7 +1043,6 @@
     }
   }
 
-  // --- 집단 편성표 네이티브 렌더링 (비상연락망 방식) ---
   async function loadGroupTableView() {
     const loadingDiv = document.getElementById("groupTableLoading");
     const contentDiv = document.getElementById("groupTableContent");
@@ -980,16 +1060,13 @@
     }
   }
 
-  // --- 가족별 묶음 렌더링 함수 ---
   function renderNativeGroupTable(data) {
     const groups = data.groups || {};
 
-    // 1. 집단 감독자 / 보조자 렌더링
     document.getElementById("lead_사랑").innerHTML = `<strong>감독자:</strong> Семён 김윤상 <span class="badge bg-primary role-badge">장로</span><br><strong>보조자:</strong> Стефан 김태규 <span class="badge bg-info text-dark role-badge">종</span>`;
     document.getElementById("lead_기쁨").innerHTML = `<strong>감독자:</strong> Павел 이한선 <span class="badge bg-primary role-badge">장로</span><br><strong>보조자:</strong> Семин 김세민 <span class="badge bg-info text-dark role-badge">종</span>`;
     document.getElementById("lead_평화").innerHTML = `<strong>감독자:</strong> Егор 송민 <span class="badge bg-primary role-badge">장로</span><br><strong>보조자:</strong> Олег 올렉 니 <span class="badge bg-secondary role-badge">종</span>`;
 
-    // 2. 집단별 명부 가족 단위 렌더링
     ["사랑", "기쁨", "평화"].forEach(grp => {
       const listEl = document.getElementById("list_" + grp);
       listEl.innerHTML = "";
@@ -1024,13 +1101,11 @@
       });
     });
 
-    // 3. 통계 요약
     document.getElementById("stat_pubs").innerText = "54";
     document.getElementById("stat_pioneers").innerText = "34";
     document.getElementById("stat_elders").innerText = "9";
     document.getElementById("stat_servants").innerText = "3";
 
-    // 4. 주간 봉사 계획표
     const planBody = document.getElementById("servicePlanBody");
     planBody.innerHTML = `
       <tr>
@@ -1043,12 +1118,11 @@
       </tr>
     `;
 
-    // 5. 회중 임명표
     const assignBody = document.getElementById("assignmentsBody");
     assignBody.innerHTML = `
       <tr><th class="table-light w-25">장로의 회 조정자</th><td>Александр 김 제 원</td><th class="table-light w-25">서기</th><td>Илья 이 차 우</td></tr>
       <tr><th class="table-light">봉사 감독자</th><td>Алексей 이 동 원</td><th class="table-light">파수대 사회자 / 보조</th><td>Владимир 이 현 규 / Александр, Алексей</td></tr>
-      <tr><th class="table-light">회중 회계</th><td>Стефан 김 태 규</td><th class="table-light">구역 관리</th><td>Се민 김 세 민</td></tr>
+      <tr><th class="table-light">회중 회계</th><td>Стефан 김 태 규</td><th class="table-light">구역 관리</th><td>Семин 김 세 민</td></tr>
       <tr><th class="table-light">왕국회관 운영위원</th><td>Владимир 이 현 규</td><th class="table-light">생활과 봉사 감독자</th><td>Андрей 유 안드레이</td></tr>
       <tr><th class="table-light">공개강연 조정자</th><td>Егор 송 민</td><th class="table-light">청소 감독자 / 보조조언자</th><td>Илья 이 차 우 / Алексей 이 동 원</td></tr>
       <tr><th class="table-light">안내인 (윤번)</th><td>Стефан | Михаи́л | Егор | Се민</td><th class="table-light">서적 관리</th><td>Се민 김 세 민</td></tr>
@@ -1067,7 +1141,6 @@
     return '';
   }
 
-  // --- 🔐 장로 개인 PIN 변경 로직 ---
   async function submitElderChangePin() {
     const cur = document.getElementById("elderCurPin").value.trim();
     const n1 = document.getElementById("elderNewPin").value.trim();
@@ -1102,6 +1175,8 @@
     alert(res.message);
     if (res.success) {
       document.getElementById("elderCurPin").value = "";
+      document.getElementById("elderNewPin").value = "";
+      document.getElementById("elderConfirm.getElementById("elderCurPin").value = "";
       document.getElementById("elderNewPin").value = "";
       document.getElementById("elderConfirmPin").value = "";
       showTab('meeting');
