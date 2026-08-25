@@ -203,7 +203,7 @@
     <!-- [탭 3: 봉사 보고 현황 & 9대 지표 & 미보고자 독려 & 파이오니아 평가] -->
     <div id="tabService" class="card p-3 mb-4" style="display:none;">
       
-      <!-- ⭐️ 1. 미보고자 집단별 알림 및 원클릭 독려 멘트 복사 박스 (최상단) -->
+      <!-- 1. 미보고자 집단별 알림 및 원클릭 독려 멘트 복사 박스 (최상단) -->
       <div id="unsubmittedAlertBox" class="card p-3 bg-danger-subtle border-danger shadow-sm mb-3" style="display:none;">
         <div class="d-flex justify-content-between align-items-center mb-2">
           <h6 class="fw-bold text-danger mb-0">📢 미제출 전도인 현황 (집단 감독자 연락용)</h6>
@@ -227,7 +227,7 @@
         </div>
       </div>
 
-      <!-- ⭐️ 2. 파이오니아 시간 평가 위젯 (2월 300h / 8·9월 560h 미달자 목록) -->
+      <!-- 2. 파이오니아 시간 평가 위젯 (2월 300h / 8·9월 560h 미달자 목록) -->
       <div id="pioneerEvalCard" class="card p-3 bg-warning-subtle border-warning shadow-sm mb-3" style="display:none;">
         <div class="d-flex justify-content-between align-items-center mb-2">
           <h6 class="fw-bold text-dark mb-0" id="pioneerEvalTitle">⏱️ 파이오니아 시간 평가 분석</h6>
@@ -273,7 +273,7 @@
         </table>
       </div>
 
-      <!-- ⭐️ 5. S-21 다운로드 매니저 (하단으로 배치) -->
+      <!-- 5. S-21 다운로드 매니저 (하단으로 배치) -->
       <div class="card p-3 bg-white border border-danger-subtle shadow-sm mt-3">
         <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
           <h6 class="fw-bold text-danger mb-0">📦 S-21 전도인 카드 다운로드 매니저</h6>
@@ -848,6 +848,7 @@
     sel.dataset.populated = "true";
   }
 
+  // ⭐️ 봉사 보고 현황, 미보고자 독려 멘트, 파이오니아 시간 평가 위젯 렌더링
   async function loadServiceReports() {
     const month = document.getElementById("serviceMonthFilter").value;
     const res = await apiCall("getMonthlyServiceDashboard", { month: month });
@@ -872,6 +873,7 @@
         badge.innerText = "완료";
       }
 
+      // 1. 미보고자 집단별 카드 렌더링
       const unsubmittedBox = document.getElementById("unsubmittedAlertBox");
       const unsubmittedContainer = document.getElementById("unsubmittedGroupsContainer");
       unsubmittedContainer.innerHTML = "";
@@ -894,8 +896,10 @@
       });
       unsubmittedBox.style.display = hasUnsubmitted ? "block" : "none";
 
+      // 2. 파이오니아 시간 평가 위젯 렌더링
       renderPioneerEvaluationWidget(res.pioneerEvaluations, month);
 
+      // 3. 보고 제출자 테이블 렌더링 (개별 S-21 다운로드 버튼 포함)
       const tb = document.getElementById("serviceReportBody");
       tb.innerHTML = "";
       res.reports.forEach(r => {
@@ -919,6 +923,7 @@
     }
   }
 
+  // ⭐️ 파이오니아 2월(300h) 및 8·9월(560h) 시간 평가 위젯
   function renderPioneerEvaluationWidget(evalData, selectedMonth) {
     const card = document.getElementById("pioneerEvalCard");
     const content = document.getElementById("pioneerEvalContent");
@@ -956,6 +961,7 @@
     }
   }
 
+  // ⭐️ 독려 멘트 원클릭 복사 함수
   function copyPrompt(lang) {
     const text = lang === 'ko' 
       ? document.getElementById("promptKo").innerText 
@@ -968,6 +974,7 @@
     });
   }
 
+  // ⭐️ 조건별 S-21 일괄 압축 다운로드
   async function downloadS21Batch() {
     const yearOpt = document.getElementById("s21ExportYear").value;
     const roleOpt = document.getElementById("s21ExportRole").value;
@@ -992,6 +999,7 @@
     }
   }
 
+  // ⭐️ 특정 전도인의 현재+전년도 2개년 S-21 개별 다운로드
   async function downloadSinglePublisherS21(pubId, pubName) {
     if (!confirm(`[${pubName}] 전도인의 현재 및 전년도(2개년) S-21 카드를 다운로드하시겠습니까?`)) return;
 
@@ -1009,6 +1017,7 @@
     }
   }
 
+  // --- 비상연락망 (가족별 지그재그 배경색 및 틀 고정, 기타정보 제외) ---
   async function loadEmergencyData() {
     const list = await apiCall("getEmergencyContacts");
     if (Array.isArray(list)) {
@@ -1043,6 +1052,7 @@
     }
   }
 
+  // --- 집단 편성표 네이티브 렌더링 (비상연락망 방식) ---
   async function loadGroupTableView() {
     const loadingDiv = document.getElementById("groupTableLoading");
     const contentDiv = document.getElementById("groupTableContent");
@@ -1141,6 +1151,7 @@
     return '';
   }
 
+  // ⭐️ 장로 개인 PIN 변경 로직 (깨진 구문 완벽 수정됨)
   async function submitElderChangePin() {
     const cur = document.getElementById("elderCurPin").value.trim();
     const n1 = document.getElementById("elderNewPin").value.trim();
@@ -1175,8 +1186,6 @@
     alert(res.message);
     if (res.success) {
       document.getElementById("elderCurPin").value = "";
-      document.getElementById("elderNewPin").value = "";
-      document.getElementById("elderConfirm.getElementById("elderCurPin").value = "";
       document.getElementById("elderNewPin").value = "";
       document.getElementById("elderConfirmPin").value = "";
       showTab('meeting');
