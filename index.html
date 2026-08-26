@@ -875,6 +875,42 @@ function getCurrentServiceYear() {
 }
 
 
+function getServiceYearFromReportMonth(ym) {
+
+  if (!ym) {
+    return getCurrentServiceYear();
+  }
+
+  const parts =
+    ym.split("-");
+
+  const year =
+    Number(parts[0]);
+
+  const month =
+    Number(parts[1]);
+
+  return month >= 9
+    ? year + 1
+    : year;
+}
+
+
+function updateServiceYearBadge() {
+
+  const t =
+    i18n[currentLang];
+
+  document.getElementById(
+    "badgeServiceYear"
+  ).innerText =
+    t.badge(
+      getServiceYearFromReportMonth(
+        activeReportMonth
+      )
+    );
+}
+  
 let currentLang = "ko";
 
 let publishers = [];
@@ -1290,9 +1326,10 @@ window.onload = async function() {
       activeReportMonth
     );
 
+    updateServiceYearBadge();
 
     updateReportingPeriodUI();
-  }
+    }
 
 
   const data =
@@ -1406,6 +1443,7 @@ async function onTestMonthChanged() {
     activeReportMonth
   );
 
+  updateServiceYearBadge();
 
   resetExistingReportState();
 
@@ -1507,15 +1545,10 @@ function setLanguage(lang) {
   const t =
     i18n[lang];
 
+  
+  updateServiceYearBadge();
 
-  document.getElementById(
-    "badgeServiceYear"
-  ).innerText =
-    t.badge(
-      getCurrentServiceYear()
-    );
-
-
+  
   document.getElementById("txtTitle").innerText =
     t.title;
 
@@ -3087,19 +3120,55 @@ async function submitServiceReport() {
 
 
   if (
+  res &&
+  res.success
+) {
+
+  alert(
+    `【 제출 성공 | Отчёт успешно отправлен 】\n\n${res.message}`
+  );
+
+  existingReportExists =
+    true;
+
+  existingReportAuthenticated =
+    false;
+
+  existingReportPin =
+    "";
+
+  existingReportHasPin =
+    selectedPub.hasPin === true;
+
+  /*
+   * 제출 완료 후 입력란은 잠그지만
+   * PIN 설정을 즉시 요구하지 않는다.
+   *
+   * 사용자가 다시 전도인을 선택하거나
+   * 기존 보고를 열려고 할 때만
+   * PIN 인증 화면을 표시한다.
+   */
+  document.getElementById(
+    "existingReportAuthBox"
+  ).style.display =
+    "none";
+
+  lockReportEntry();
+
+} else {
+
+  alert(
+    `【 제출 실패 | Ошибка отправки 】\n\n${res ? res.message : ""}`
+  );
+
+  /*
+   * 저장 도중 서버에서 PIN 재인증을 요구한 경우
+   */
+  if (
     res &&
-    res.success
+    res.requiresPin
   ) {
 
-    alert(
-      `【 제출 성공 | Отчёт успешно отправлен 】\n\n${res.message}`
-    );
-
-
-    /*
-     * 저장 직후에는 기존 보고가 되었으므로
-     * 다시 수정하려면 PIN 인증하도록 잠근다.
-     */
     existingReportExists =
       true;
 
@@ -3110,42 +3179,40 @@ async function submitServiceReport() {
       "";
 
     existingReportHasPin =
-      selectedPub.hasPin === true;
-
+      true;
 
     lockReportEntry();
 
     renderExistingReportAuthBox();
 
+    return;
+  }
+
+  /*
+   * 일반적인 저장 실패
+   */
+  if (
+    existingReportAuthenticated
+  ) {
+
+    unlockReportEntry();
+
+    btn.disabled =
+      false;
+
+    btn.innerText =
+      i18n[currentLang].submitUpdate;
+
   } else {
 
-    alert(
-      `【 제출 실패 | Ошибка отправки 】\n\n${res ? res.message : ""}`
-    );
+    btn.disabled =
+      false;
 
-
-    if (
-      existingReportAuthenticated
-    ) {
-
-      unlockReportEntry();
-
-      btn.disabled =
-        false;
-
-      btn.innerText =
-        i18n[currentLang].submitUpdate;
-
-    } else {
-
-      btn.disabled =
-        false;
-
-      btn.innerText =
-        i18n[currentLang].submit;
-    }
+    btn.innerText =
+      i18n[currentLang].submit;
   }
 }
+
 
 
 /* =========================================================
