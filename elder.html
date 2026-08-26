@@ -363,7 +363,6 @@
           <th>추가</th>
           <th>연구</th>
           <th>비고</th>
-          <th>S-21</th>
         </tr>
       </thead>
 
@@ -487,150 +486,6 @@
       id="pioneerEvalContent"
       class="table-responsive"
     ></div>
-
-  </div>
-
-
-  <!-- =====================================================
-       4. 전도인 개별 S-21
-       ===================================================== -->
-  <div class="card p-3 bg-primary-subtle border border-primary-subtle shadow-sm mb-3">
-
-    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-
-      <h6 class="fw-bold text-primary mb-0">
-        📄 전도인 개별 S-21
-      </h6>
-
-      <span class="badge bg-primary">
-        한국어 카드
-      </span>
-
-    </div>
-
-
-    <div class="row g-2">
-
-      <div class="col-md-5">
-
-        <label class="form-label small fw-bold text-secondary mb-1">
-          전도인
-        </label>
-
-        <select
-          id="s21SinglePublisher"
-          class="form-select form-select-sm fw-bold"
-        >
-          <option value="">전도인을 선택하세요</option>
-        </select>
-
-      </div>
-
-
-      <div class="col-md-3">
-
-        <label class="form-label small fw-bold text-secondary mb-1">
-          봉사연도
-        </label>
-
-        <select
-          id="s21SingleYear"
-          class="form-select form-select-sm fw-bold"
-        ></select>
-
-      </div>
-
-
-      <div class="col-md-4 d-flex align-items-end">
-
-        <button
-          class="btn btn-primary btn-sm w-100 fw-bold py-2 shadow-sm"
-          id="btnSingleS21"
-          onclick="downloadSelectedPublisherS21()"
-        >
-          📥 개별 S-21 다운로드
-        </button>
-
-      </div>
-
-    </div>
-
-  </div>
-
-
-  <!-- =====================================================
-       5. S-21 일괄 다운로드
-       ===================================================== -->
-  <div class="card p-3 bg-white border border-danger-subtle shadow-sm">
-
-    <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
-
-      <h6 class="fw-bold text-danger mb-0">
-        📦 S-21 전도인 카드 다운로드 매니저
-      </h6>
-
-      <span class="badge bg-danger text-white">
-        순회방문 대비 / 한국어 카드
-      </span>
-
-    </div>
-
-
-    <div class="row g-2 align-items-center">
-
-      <div class="col-md-4">
-
-        <label class="form-label small fw-bold text-secondary mb-1">
-          대상 연도
-        </label>
-
-        <select
-          id="s21ExportYear"
-          class="form-select form-select-sm fw-bold border-danger"
-        ></select>
-
-      </div>
-
-
-      <div class="col-md-4">
-
-        <label class="form-label small fw-bold text-secondary mb-1">
-          대상 신분
-        </label>
-
-        <select
-          id="s21ExportRole"
-          class="form-select form-select-sm fw-bold border-secondary"
-        >
-          <option value="ALL" selected>
-            전체 (전도인 + 파이오니아)
-          </option>
-
-          <option value="PIONEER_ONLY">
-            정규 파이오니아만
-          </option>
-
-          <option value="PUBLISHER_ONLY">
-            일반 전도인만
-          </option>
-        </select>
-
-      </div>
-
-
-      <div class="col-md-4 d-flex align-items-end">
-
-        <button
-          class="btn btn-danger btn-sm w-100 fw-bold py-2 shadow-sm"
-          id="btnExportS21Batch"
-          onclick="downloadS21Batch()"
-        >
-          📥 조건별 일괄 다운로드 (ZIP)
-        </button>
-
-      </div>
-
-    </div>
 
   </div>
 
@@ -854,7 +709,6 @@
       document.getElementById("btnTabService").classList.add('active');
 
       populateServiceMonthDropdown();
-      populateS21Controls();
       loadServiceReports();
     }
     if (tab === 'emergency') { document.getElementById("btnTabEmergency").classList.add('active'); loadEmergencyData(); }
@@ -863,21 +717,75 @@
   }
 
   async function loadMeetingData() {
-    const data = await apiCall("getMeetingAttendanceData");
-    if (data) {
-      groupData = data.groups;
-      const select = document.getElementById("meetingScheduleSelect");
-      select.innerHTML = "";
-      data.schedule.forEach(s => {
-        const opt = document.createElement("option");
-        opt.value = s.date;
-        opt.dataset.type = s.type;
-        opt.text = `${s.date} [${s.type}] ${s.note ? '('+s.note+')' : ''}`;
-        select.appendChild(opt);
-      });
-      onMeetingDateChanged();
+  const data = await apiCall("getMeetingAttendanceData");
+
+  if (!data) return;
+
+  groupData = data.groups || {};
+
+  const select =
+    document.getElementById("meetingScheduleSelect");
+
+  select.innerHTML = "";
+
+  const schedule =
+    Array.isArray(data.schedule)
+      ? data.schedule
+      : [];
+
+  schedule.forEach(s => {
+    const opt = document.createElement("option");
+
+    opt.value = s.date;
+    opt.dataset.type = s.type;
+
+    opt.text =
+      `${s.date} [${s.type}] ${s.note ? '(' + s.note + ')' : ''}`;
+
+    select.appendChild(opt);
+  });
+
+  if (schedule.length === 0) {
+    document.getElementById("meetingTypeDisplay").value = "";
+    return;
+  }
+
+  /*
+   * 현재 날짜를 넘지 않은 일정 중
+   * 가장 최근 일정 자동 선택
+   *
+   * 시간은 비교하지 않고 날짜가 바뀌는 시점에 전환
+   */
+  const now = new Date();
+
+  const today =
+    `${now.getFullYear()}-` +
+    `${String(now.getMonth() + 1).padStart(2, "0")}-` +
+    `${String(now.getDate()).padStart(2, "0")}`;
+
+  let targetIndex = -1;
+
+  for (let i = 0; i < schedule.length; i++) {
+    const meetingDate =
+      String(schedule[i].date).substring(0, 10);
+
+    if (meetingDate <= today) {
+      targetIndex = i;
     }
   }
+
+  /*
+   * 최근 과거 일정이 하나도 없다면
+   * 가장 가까운 미래 일정
+   */
+  if (targetIndex < 0) {
+    targetIndex = 0;
+  }
+
+  select.selectedIndex = targetIndex;
+
+  await onMeetingDateChanged();
+}
 
   async function onMeetingDateChanged() {
     const sel = document.getElementById("meetingScheduleSelect");
@@ -1481,7 +1389,7 @@ async function populateS21Controls() {
 
     tb.innerHTML = `
       <tr>
-        <td colspan="8" class="text-muted py-3">
+        <td colspan="7" class="text-muted py-3">
           해당 월에 제출된 봉사 보고가 없습니다.
         </td>
       </tr>
@@ -1511,22 +1419,8 @@ async function populateS21Controls() {
         <td class="text-start nowrap">
           <small>${escapeHtmlElder(r.remarks || "")}</small>
         </td>
-
-        <td>
-          <button
-            class="btn btn-sm btn-outline-danger py-0 px-2 fw-bold"
-            onclick='downloadSinglePublisherS21(
-              ${JSON.stringify(String(r.id))},
-              ${JSON.stringify(String(r.name))}
-            )'
-            title="현재+전년도 S-21 다운로드"
-          >
-            📄
-          </button>
-        </td>
       `;
-
-
+      
       tb.appendChild(tr);
     });
   }
